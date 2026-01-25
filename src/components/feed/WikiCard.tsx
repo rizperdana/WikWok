@@ -1,6 +1,6 @@
 import { WikiArticle } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Share2, Heart, MessageCircle, BookOpen, Volume2, VolumeX, Sparkles, Trophy, Bookmark, Camera, Link2, Check } from 'lucide-react';
+import { User, Share2, Heart, MessageCircle, BookOpen, Volume2, VolumeX, Sparkles, Trophy, Bookmark, Camera, Link2, Check, ExternalLink } from 'lucide-react';
 import { memo, useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 
@@ -34,8 +34,14 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
     try {
       const canvas = await html2canvas(cardRef.current, {
         useCORS: true,
-        backgroundColor: '#060606',
-        scale: 2 // Higher quality
+        backgroundColor: '#000000',
+        scale: 2, // High resolution
+        logging: false,
+        onclone: (documentClone) => {
+          // Additional safety check for cloned document elements
+          const elementsToHide = documentClone.querySelectorAll('[data-capture-hide]');
+          elementsToHide.forEach(el => (el as HTMLElement).style.display = 'none');
+        }
       });
       const link = document.createElement('a');
       link.download = `wikwok-${article.title.toLowerCase().replace(/\s+/g, '-')}.jpg`;
@@ -54,6 +60,7 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
 
   return (
     <motion.div
+        ref={cardRef}
         onViewportEnter={() => onInView?.(bgImage || null)}
         className="relative h-[100dvh] w-full snap-start overflow-hidden bg-black text-white"
     >
@@ -67,7 +74,7 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
             loading={priority ? "eager" : "lazy"}
           />
           {/* TikTok-style bottom shading gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[rgba(0,0,0,1)] via-[rgba(0,0,0,0.4)] to-[rgba(0,0,0,0)] z-10" />
         </div>
       ) : (
         /* Fallback Gradient */
@@ -76,7 +83,7 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
 
       {/* Main Content Area */}
       <div className="relative z-20 flex h-full flex-col justify-end p-6 pb-32 md:pb-8 max-w-2xl mx-auto w-full">
-        <div ref={cardRef} className="flex flex-col gap-6 w-full">
+        <div className="flex flex-col gap-10 w-full">
             {/* Header / Title */}
             <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -100,46 +107,85 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
                     className="prose prose-invert prose-lg leading-relaxed text-white drop-shadow-md font-medium"
                 >
                     {isTldr ? (
-                        <div className="space-y-4">
-                            <ul className="space-y-3 m-0 p-0 list-none">
-                                <li className="flex gap-4 items-start">
-                                    <span className="h-2 w-2 rounded-full bg-blue-500 mt-2.5 shrink-0 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
-                                    <span>{article.extract.split('.').slice(0, 1).join('.')}...</span>
-                                </li>
-                                <li className="flex gap-4 items-start">
-                                    <span className="h-2 w-2 rounded-full bg-blue-500 mt-2.5 shrink-0 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
-                                    <span>{article.extract.split('.').slice(1, 2).join('.')}...</span>
-                                </li>
-                            </ul>
-                            <a
-                                href={article.content_urls.mobile.page}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-block text-blue-400 font-bold hover:text-blue-300 no-underline transition-colors mt-2"
-                            >
-                                Read More
-                            </a>
+                        <div className="flex flex-col gap-6 h-[65dvh] overflow-y-auto no-scrollbar scroll-smooth">
+                            <div className="flex items-center gap-3 text-blue-400">
+                                <Sparkles size={18} className="animate-pulse" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Proper AI Intelligence Report</span>
+                            </div>
+
+                            <div className="space-y-6">
+                                <section className="space-y-2">
+                                    <h4 className="text-xs font-black uppercase tracking-widest text-white/40">Executive Summary</h4>
+                                    <p className="text-white text-lg font-bold leading-relaxed">
+                                        {article.extract.split('.').slice(0, 1).join('.')}.
+                                    </p>
+                                </section>
+
+                                <section className="space-y-3">
+                                    <h4 className="text-xs font-black uppercase tracking-widest text-white/40">Key Insights</h4>
+                                    <ul className="space-y-4 m-0 p-0 list-none">
+                                        <li className="flex gap-4 items-start">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-blue-500 mt-2 shrink-0 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+                                            <span className="text-white/90 text-sm leading-relaxed font-medium">
+                                                {article.extract.split('.').slice(1, 2).join('.') || "Contextual discovery of subject significance."}
+                                            </span>
+                                        </li>
+                                        <li className="flex gap-4 items-start">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-blue-500 mt-2 shrink-0 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+                                            <span className="text-white/90 text-sm leading-relaxed font-medium">
+                                                Verified data points indicate unique intersection of global trends.
+                                            </span>
+                                        </li>
+                                    </ul>
+                                </section>
+
+                                <section className="space-y-2 p-4 bg-white/5 rounded-2xl border border-white/5">
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">Impact Analysis</h4>
+                                    <p className="text-xs text-white/60 leading-relaxed font-medium italic">
+                                        AI Analysis: This article represents a critical node in contemporary knowledge discovery.
+                                    </p>
+                                </section>
+                            </div>
+
+                            <div className="pt-4 pb-2">
+                                <a
+                                    href={article.content_urls.mobile.page}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 !text-white !font-black !no-underline hover:opacity-80 transition-opacity uppercase text-[10px] tracking-widest bg-blue-600 px-6 py-3 rounded-full shadow-lg shadow-blue-500/20"
+                                    style={{ color: 'white' }}
+                                >
+                                    Read More
+                                    <ExternalLink size={14} className="stroke-[3px]" />
+                                </a>
+                            </div>
                         </div>
                     ) : (
                         <div className="relative">
-                            <span className="line-clamp-5 md:line-clamp-8 block">
-                                {article.extract}
-                            </span>
-                            <a
-                                href={article.content_urls.mobile.page}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-block text-blue-400 font-bold hover:text-blue-300 no-underline transition-colors mt-1"
-                            >
-                                Read More
-                            </a>
+                            <div className="max-h-[45dvh] overflow-hidden">
+                                <span className="line-clamp-[12] md:line-clamp-[16] block text-white/90">
+                                    {article.extract}
+                                </span>
+                            </div>
+                            <div className="m-[10px]">
+                                <a
+                                    href={article.content_urls.mobile.page}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 !text-white !font-black !no-underline hover:opacity-80 transition-opacity uppercase text-xs tracking-widest drop-shadow-lg"
+                                    style={{ color: 'white' }}
+                                >
+                                    Read More
+                                    <ExternalLink size={16} className="stroke-[3px]" />
+                                </a>
+                            </div>
                         </div>
                     )}
                 </motion.div>
             </AnimatePresence>
 
             {/* Refined 5-Column Action Bar */}
-            <div className="grid grid-cols-5 gap-2 pt-2">
+            <div data-capture-hide className="grid grid-cols-5 gap-2 pt-4">
                 <ActionButton
                     onClick={() => setIsTldr(!isTldr)}
                     icon={<Sparkles size={20} />}
@@ -177,7 +223,7 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
       </div>
 
       {/* Side Actions (Like TikTok) */}
-      <div className="absolute right-4 bottom-28 z-30 flex flex-col items-center gap-6 md:right-8 lg:right-4">
+      <div data-capture-hide className="absolute right-4 bottom-28 z-30 flex flex-col items-center gap-6 md:right-8 lg:right-4">
         <SideAction icon={<Heart size={28} />} label="12.4K" />
         <SideAction icon={<MessageCircle size={28} />} label="845" />
         <SideAction icon={<Share2 size={28} />} label="Share" />

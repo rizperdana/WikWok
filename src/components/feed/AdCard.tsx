@@ -11,13 +11,13 @@ export const AdCard = memo(function AdCard() {
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[120px] rounded-full" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/5 blur-[120px] rounded-full" />
 
-      <div className="relative z-10 flex flex-col items-center p-12 text-center w-full max-w-lg bg-[#111111] backdrop-blur-3xl rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.5)] mx-4 border border-white/[0.03]">
-            <span className="mb-8 rounded-full bg-blue-500/10 px-4 py-1.5 text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] border border-blue-500/20">
+      <div className="relative z-10 flex flex-col items-center p-12 text-center w-full max-w-lg bg-[#111111] backdrop-blur-3xl rounded-[2rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] mx-4">
+            <span className="mb-8 rounded-full bg-blue-500/10 px-4 py-1.5 text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">
                 PROMOTED DISCOVERY
             </span>
 
             {pId ? (
-                <div className="w-full min-h-[300px] bg-black/40 rounded-2xl flex items-center justify-center overflow-hidden border border-white/5">
+                <div className="w-full min-h-[300px] bg-black/40 rounded-2xl flex items-center justify-center overflow-hidden">
                     {/* Responsive Ad Unit */}
                     <ins className="adsbygoogle"
                         style={{ display: 'block', width: '100%' }}

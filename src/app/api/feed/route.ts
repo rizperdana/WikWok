@@ -22,7 +22,7 @@ async function fetchRandomArticle(lang: string): Promise<WikiArticle | null> {
       data.type === 'standard' &&
       data.originalimage &&
       data.extract &&
-      data.extract.length >= 200
+      data.extract.length >= (lang === 'en' ? 200 : 120) // More lenient for other languages
     ) {
       return {
         title: data.title,
@@ -40,7 +40,10 @@ async function fetchRandomArticle(lang: string): Promise<WikiArticle | null> {
 }
 
 export async function GET(request: Request) {
-  const lang = request.headers.get('x-wiki-lang') || 'en';
+  const { searchParams } = new URL(request.url);
+  const lang = searchParams.get('lang') || request.headers.get('x-wiki-lang') || 'en';
+  console.log(`[API] Fetching feed for lang: ${lang}`);
+
   const validArticles: WikiArticle[] = [];
   const TARGET_COUNT = 10;
   const MAX_ATTEMPTS = 30; // Safety brake

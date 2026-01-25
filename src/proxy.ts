@@ -16,8 +16,8 @@ const COUNTRY_TO_LANG: Record<string, string> = {
   // Add more mappings as needed
 };
 
-export function middleware(request: NextRequest) {
-  const country = request.geo?.country || request.headers.get('x-vercel-ip-country') || 'US';
+export function proxy(request: NextRequest) {
+  const country = (request as any).geo?.country || request.headers.get('x-vercel-ip-country') || 'US';
   const lang = COUNTRY_TO_LANG[country] || 'en';
 
   // Clone the request headers and set the wiki language

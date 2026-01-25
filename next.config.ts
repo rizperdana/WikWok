@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Silence Turbopack error since we use next-pwa (webpack based)
+  turbopack: {},
 };
 
 const withPWAConfig = withPWA({

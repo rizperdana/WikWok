@@ -6,10 +6,13 @@ export function GoogleAdSense() {
   if (!pId) return null;
 
   return (
-    <script
-      async
-      src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-${pId.replace('pub-', '')}`}
-      crossOrigin="anonymous"
-    />
+    <>
+      <meta name="google-adsense-account" content={`ca-pub-${pId.replace('pub-', '')}`} />
+      <script
+        async
+        src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-${pId.replace('pub-', '')}`}
+        crossOrigin="anonymous"
+      />
+    </>
   );
 }

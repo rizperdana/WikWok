@@ -8,8 +8,8 @@ async function fetchRandomArticle(lang: string): Promise<WikiArticle | null> {
     const res = await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/random/summary`, {
       cache: 'no-store', // Always fresh for random
       headers: {
-        'User-Agent': 'Wikwok/1.0 (mailto:admin@wikwok.app)',
-        'Origin': 'https://wikwok.app'
+        'User-Agent': 'Wikwok/1.0 (mailto:admin@wik-wok.vercel.app)',
+        'Origin': 'https://wik-wok.vercel.app'
       }
     });
 

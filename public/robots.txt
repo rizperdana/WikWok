@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://wik-wok.vercel.app/sitemap.xml

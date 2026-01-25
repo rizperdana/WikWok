@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   title: "Wikwok - Discover Knowledge",
   description: "TikTok-style discovery engine for Wikipedia",
   manifest: "/manifest.json",
+  other: {
+    "google-adsense-account": "ca-pub-2762935447490628",
+  }
 };
 
 export const viewport: Viewport = {

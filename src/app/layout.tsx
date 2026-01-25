@@ -25,10 +25,21 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID;
+  const adUrl = pId ? `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-${pId.replace('pub-', '')}` : '';
+
   return (
     <html lang="en">
+      <head>
+        {adUrl && (
+          <script
+            async
+            src={adUrl}
+            crossOrigin="anonymous"
+          />
+        )}
+      </head>
       <body className={`${inter.className} bg-black text-white antialiased overflow-hidden`}>
-        <GoogleAdSense pId={process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID || ''} />
         <Providers>
             {children}
         </Providers>

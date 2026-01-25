@@ -4,15 +4,24 @@
 
 :root {
   --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 0, 0, 0;
-  --background-end-rgb: 0, 0, 0;
+  --background-start: #000000;
+  --background-end: #000000;
+}
+
+/* Explicitly disable any potential modern color function defaults */
+@layer base {
+  :root {
+    --tw-colors-blue-500: #3b82f6;
+    --tw-colors-blue-600: #2563eb;
+    --tw-colors-green-400: #4ade80;
+  }
 }
 
 html, body {
   height: 100%;
   width: 100%;
   color: rgb(var(--foreground-rgb));
-  background: black;
+  background: #060606;
   overscroll-behavior-y: none; /* Prevent bounce effects */
   margin: 0;
   padding: 0;
@@ -28,4 +37,17 @@ html, body {
 .no-scrollbar {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
+}
+
+@keyframes shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
 }

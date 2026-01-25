@@ -6,20 +6,22 @@ export const AdCard = memo(function AdCard() {
   const pId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID;
 
   return (
-    <div className="relative h-[100dvh] w-full snap-start flex items-center justify-center bg-gray-900 text-white overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 to-purple-900 opacity-50" />
+    <div className="relative h-[100dvh] w-full snap-start flex items-center justify-center bg-[#0d0d0d] text-white overflow-hidden">
+      {/* Background Decor */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[120px] rounded-full" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/5 blur-[120px] rounded-full" />
 
-      <div className="relative z-10 flex flex-col items-center p-8 text-center w-full max-w-lg">
-            <span className="mb-4 rounded-full bg-yellow-400/20 px-3 py-1 text-xs font-bold text-yellow-400 uppercase tracking-wider border border-yellow-400/30">
-                Sponsored Knowledge
+      <div className="relative z-10 flex flex-col items-center p-12 text-center w-full max-w-lg bg-[#111111] backdrop-blur-3xl rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.5)] mx-4 border border-white/[0.03]">
+            <span className="mb-8 rounded-full bg-blue-500/10 px-4 py-1.5 text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] border border-blue-500/20">
+                PROMOTED DISCOVERY
             </span>
 
             {pId ? (
-                <div className="w-full min-h-[300px] bg-white/5 rounded-lg flex items-center justify-center overflow-hidden">
+                <div className="w-full min-h-[300px] bg-black/40 rounded-2xl flex items-center justify-center overflow-hidden border border-white/5">
                     {/* Responsive Ad Unit */}
                     <ins className="adsbygoogle"
                         style={{ display: 'block', width: '100%' }}
-                        data-ad-client={`ca-pub-${pId}`}
+                        data-ad-client={`ca-pub-${pId.replace('pub-', '')}`}
                         data-ad-slot="1234567890" // Placeholder slot
                         data-ad-format="auto"
                         data-full-width-responsive="true" />
@@ -30,19 +32,20 @@ export const AdCard = memo(function AdCard() {
             ) : (
                 <>
                     <motion.h2
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        className="text-4xl font-black mb-4"
+                        initial={{ opacity: 0, y: 10 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        className="text-4xl md:text-5xl font-black mb-6 leading-tight tracking-tighter"
                     >
-                        Support Wikwok
+                        LEARN <span className="text-blue-500 italic">WITHOUT</span> LIMITS
                     </motion.h2>
 
-                    <p className="max-w-md text-gray-300 mb-8">
-                        Keep scrolling for more fascinating discoveries. This space helps keep our servers running and knowledge free.
+                    <p className="max-w-xs text-white/40 mb-12 text-lg font-medium leading-relaxed">
+                        Stay curious. Help keep the world&apos;s knowledge accessible to everyone.
                     </p>
 
-                    <button className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-100 transition-transform active:scale-95">
-                        Learn More
+                    <button className="w-full py-6 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-500 transition-all active:scale-[0.98] shadow-[0_10px_30px_-10px_rgba(37,99,235,0.4)] uppercase tracking-widest text-xs relative overflow-hidden group">
+                        <span className="relative z-10">BECOME A SUPPORTER</span>
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer" />
                     </button>
                 </>
             )}

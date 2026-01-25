@@ -1,0 +1,17 @@
+{
+    "name": "Wikwok",
+    "short_name": "Wikwok",
+    "theme_color": "#000000",
+    "background_color": "#000000",
+    "display": "standalone",
+    "orientation": "portrait",
+    "scope": "/",
+    "start_url": "/",
+    "icons": [
+        {
+            "src": "/next.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        }
+    ]
+}

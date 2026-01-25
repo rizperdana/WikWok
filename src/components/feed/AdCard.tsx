@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
 import Script from 'next/script';
+import { memo } from 'react';
 
-export function AdCard() {
+export const AdCard = memo(function AdCard() {
   const pId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID;
 
   return (
-    <div className="relative h-[100dvh] w-full snap-start flex items-center justify-center bg-gray-900 text-white">
+    <div className="relative h-[100dvh] w-full snap-start flex items-center justify-center bg-gray-900 text-white overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 to-purple-900 opacity-50" />
 
       <div className="relative z-10 flex flex-col items-center p-8 text-center w-full max-w-lg">
@@ -52,4 +53,4 @@ export function AdCard() {
        </div>
     </div>
   );
-}
+});

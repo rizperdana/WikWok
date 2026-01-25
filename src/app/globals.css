@@ -8,14 +8,15 @@
   --background-end-rgb: 0, 0, 0;
 }
 
-body {
+html, body {
+  height: 100%;
+  width: 100%;
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background: black;
+  overscroll-behavior-y: none; /* Prevent bounce effects */
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Main scroll is in Feed container */
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */

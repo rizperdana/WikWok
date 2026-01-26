@@ -174,3 +174,97 @@ html, body {
     background: rgba(255,255,255,0.1);
     font-weight: bold;
 }
+
+/* Infobox styling */
+.wiki-content .infobox,
+.wiki-content .infobox_v2,
+.wiki-content .vcard,
+.wiki-content .vevent {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 1em 0;
+    float: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+.wiki-content .infobox th,
+.wiki-content .infobox td {
+    padding: 8px;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.wiki-content .infobox-header,
+.wiki-content .infobox-above {
+    font-weight: bold;
+    font-size: 1.1em;
+    text-align: center;
+    padding: 12px 8px;
+}
+
+/* Lists */
+.wiki-content ul, .wiki-content ol {
+    padding-left: 1.5em;
+    margin: 1em 0;
+}
+.wiki-content li {
+    margin-bottom: 0.5em;
+    line-height: 1.6;
+}
+
+/* References and citations */
+.wiki-content .reference,
+.wiki-content .mw-reference-text,
+.wiki-content sup.reference {
+    font-size: 0.75em;
+    color: #9ca3af;
+    vertical-align: super;
+}
+.wiki-content .reflist {
+    font-size: 0.85em;
+    color: #9ca3af;
+}
+
+/* Navigation boxes and sidebars */
+.wiki-content .navbox,
+.wiki-content .sidebar,
+.wiki-content .portal,
+.wiki-content .sistersitebox,
+.wiki-content .metadata,
+.wiki-content .noprint {
+    display: none;
+}
+
+/* Gallery */
+.wiki-content .gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 1em 0;
+}
+.wiki-content .gallerybox {
+    flex: 0 0 auto;
+}
+
+/* Blockquote */
+.wiki-content blockquote {
+    border-left: 4px solid var(--color-cerulean-500);
+    padding-left: 1em;
+    margin: 1em 0;
+    font-style: italic;
+    color: #d1d5db;
+}
+
+/* Code and preformatted */
+.wiki-content pre, .wiki-content code {
+    background: rgba(0,0,0,0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9em;
+}
+.wiki-content pre {
+    padding: 12px;
+    overflow-x: auto;
+}

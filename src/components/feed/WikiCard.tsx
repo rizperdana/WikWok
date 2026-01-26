@@ -5,25 +5,31 @@ import { memo, useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import { CommentSheet } from './CommentSheet';
-import { ArticleReader } from './ArticleReader';
+import { prefetchWikiPageHtml } from '@/lib/services/wikipedia';
 
 interface WikiCardProps {
   article: WikiArticle;
   priority?: boolean;
   onInView?: (imageUrl: string | null) => void;
+  onRead?: (article: WikiArticle) => void;
 }
 
-export const WikiCard = memo(function WikiCard({ article, priority = false, onInView }: WikiCardProps) {
+export const WikiCard = memo(function WikiCard({ article, priority = false, onInView, onRead }: WikiCardProps) {
   const { user } = useAuth();
   const bgImage = article.originalimage?.source;
   const [isTldr, setIsTldr] = useState(false);
-  const [isListening, setIsListening] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0); // Placeholder or fetch real count
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
-  const [isReaderOpen, setIsReaderOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // Prefetch Article HTML if priority (likely next) or already rendered
+  useEffect(() => {
+    if (priority) {
+        prefetchWikiPageHtml(article.title, article.lang);
+    }
+  }, [priority, article.title, article.lang]);
 
   // Fetch initial status
   useEffect(() => {
@@ -49,16 +55,6 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
         .then(({count}) => setLikeCount(count || 0));
   }, [article.content_urls.mobile.page]);
 
-  useEffect(() => {
-    if (isListening) {
-      const utterance = new SpeechSynthesisUtterance(isTldr ? `Key points for ${article.title}: ${article.extract.split('.').slice(0, 2).join('.')}` : article.extract);
-      utterance.onend = () => setIsListening(false);
-      window.speechSynthesis.speak(utterance);
-    } else {
-      window.speechSynthesis.cancel();
-    }
-    return () => window.speechSynthesis.cancel();
-  }, [isListening, article.extract, isTldr, article.title]);
 
   const handleLike = async () => {
     if (!user) return alert("Please login to like!");
@@ -93,14 +89,15 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
   };
 
   const handleShare = () => {
+      const shareUrl = `https://${article.lang || 'en'}.wikipedia.org/wiki/${encodeURIComponent(article.title.replace(/ /g, '_'))}`;
       if (navigator.share) {
           navigator.share({
               title: article.title,
               text: article.extract,
-              url: article.content_urls.mobile.page
+              url: shareUrl
           });
       } else {
-          navigator.clipboard.writeText(article.content_urls.mobile.page);
+          navigator.clipboard.writeText(shareUrl);
           alert('Link copied to clipboard!');
       }
   };
@@ -196,7 +193,7 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
 
                             <div className="pt-4 pb-2">
                                 <button
-                                    onClick={() => setIsReaderOpen(true)}
+                                    onClick={() => onRead?.(article)}
                                     className="inline-flex items-center gap-2 !text-white !font-black !no-underline hover:opacity-80 transition-opacity uppercase text-[10px] tracking-widest bg-blue-600 px-6 py-3 rounded-full shadow-lg shadow-blue-500/20"
                                 >
                                     Read Article
@@ -213,7 +210,7 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
                             </div>
                             <div className="mt-4">
                                 <button
-                                    onClick={() => setIsReaderOpen(true)}
+                                    onClick={() => onRead?.(article)}
                                     className="inline-flex items-center gap-2 !text-white !font-black hover:opacity-80 transition-opacity uppercase text-xs tracking-widest drop-shadow-lg"
                                 >
                                     Read Article
@@ -269,12 +266,6 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
         articleUrl={article.content_urls.mobile.page}
       />
 
-      <ArticleReader
-        isOpen={isReaderOpen}
-        onClose={() => setIsReaderOpen(false)}
-        title={article.title}
-        lang={article.lang}
-      />
     </motion.div>
   );
 });

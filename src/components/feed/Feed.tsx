@@ -10,6 +10,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Loader2, ChevronDown, Check, Search, ArrowLeft } from 'lucide-react';
 import { LANGUAGES } from '@/lib/constants/languages';
 import { WikiArticle, FeedItem } from '@/types';
+import { getTrendingTopics, TrendingTopic } from '@/lib/services/wikipedia';
+import { ArticleReader } from './ArticleReader';
 
 export function Feed() {
   const { items: feedItems, lang, setLang, fetchNextPage, hasNextPage, isFetching } = useWikwokFeed();
@@ -22,6 +24,13 @@ export function Feed() {
   const [searchResults, setSearchResults] = useState<FeedItem[] | null>(null);
   const [showTopControls, setShowTopControls] = useState(true);
   const lastScrollTopRef = useRef(0);
+  const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([]);
+  const [readingArticle, setReadingArticle] = useState<WikiArticle | null>(null);
+
+  // Fetch trending topics when language changes
+  useEffect(() => {
+    getTrendingTopics(lang).then(setTrendingTopics);
+  }, [lang]);
 
   // Scroll to Top when search state changes
   useEffect(() => {
@@ -37,7 +46,7 @@ export function Feed() {
           fetchNextPage();
         }
       },
-      { threshold: 0.1 }
+      { rootMargin: '400px', threshold: 0 }
     );
 
     if (loadMoreRef.current) {
@@ -49,8 +58,12 @@ export function Feed() {
 
   if (feedItems.length === 0 && isFetching && !searchResults) {
       return (
-          <div className="h-screen w-full flex items-center justify-center bg-[#060606] text-white">
-              <div className="w-10 h-10 border-4 border-cerulean-500/20 border-t-cerulean-500 rounded-full animate-spin-custom shadow-[0_0_20px_rgba(69,123,157,0.2)]"></div>
+          <div className="h-screen w-full flex flex-col items-center justify-center bg-[#060606] text-white gap-6">
+              <div className="w-12 h-12 border-4 border-cerulean-500/20 border-t-cerulean-500 rounded-full animate-spin-custom shadow-[0_0_20px_rgba(69,123,157,0.2)]"></div>
+              <div className="text-center">
+                  <p className="text-lg font-bold text-white/80">Discovering knowledge...</p>
+                  <p className="text-sm text-white/50 mt-1">Loading random articles for you</p>
+              </div>
           </div>
       );
   }
@@ -224,6 +237,7 @@ export function Feed() {
                      article={item.data}
                      priority={index < 2}
                      onInView={setActiveBg}
+                     onRead={setReadingArticle}
                    />
                ) : (
                    <AdCard />
@@ -235,10 +249,13 @@ export function Feed() {
         {!searchResults && (
             <div
             ref={loadMoreRef}
-            className="h-32 w-full flex items-center justify-center snap-start bg-transparent text-white"
+            className="h-32 w-full flex flex-col items-center justify-center snap-start bg-transparent text-white gap-2"
             >
             {isFetching && (
-                <div className="w-8 h-8 border-4 border-cerulean-500/20 border-t-cerulean-500 rounded-full animate-spin-custom"></div>
+                <>
+                    <div className="w-6 h-6 border-2 border-cerulean-500/20 border-t-cerulean-500 rounded-full animate-spin-custom"></div>
+                    <span className="text-xs text-white/50 font-medium tracking-widest uppercase">Fetching more...</span>
+                </>
             )}
             {!hasNextPage && feedItems.length > 0 && <span className="text-sm text-white/30 font-bold tracking-widest uppercase">The End</span>}
             </div>
@@ -263,14 +280,25 @@ export function Feed() {
           </div>
 
           <div className="flex-1 overflow-y-auto no-scrollbar">
-              <h4 className="text-sm font-bold uppercase tracking-widest text-white/40 mb-4">Reading Pulse</h4>
+              <h4 className="text-sm font-bold uppercase tracking-widest text-white/40 mb-4">Trending Now</h4>
               <div className="space-y-4">
-                  <PulseItem label="Ancient Civilizations" count="1.2k" />
-                  <PulseItem label="Quantum Mechanics" count="842" />
-                  <PulseItem label="Space Exploration" count="2.1k" />
+                  {trendingTopics.length > 0 ? (
+                      trendingTopics.map((topic, i) => (
+                          <PulseItem key={i} label={topic.title} count={topic.views} />
+                      ))
+                  ) : (
+                      <p className="text-xs text-white/30">Loading trends...</p>
+                  )}
               </div>
           </div>
       </aside>
+
+      <ArticleReader
+        isOpen={!!readingArticle}
+        onClose={() => setReadingArticle(null)}
+        title={readingArticle?.title || ''}
+        lang={readingArticle?.lang}
+      />
     </div>
   );
 }

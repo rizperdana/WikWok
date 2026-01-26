@@ -1,6 +1,61 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-punch-red: #e63946;
+  --color-punch-red-100: #33060a;
+  --color-punch-red-200: #660d14;
+  --color-punch-red-300: #99131e;
+  --color-punch-red-400: #cb1928;
+  --color-punch-red-500: #e63946;
+  --color-punch-red-600: #eb5f6b;
+  --color-punch-red-700: #f08790;
+  --color-punch-red-800: #f5afb5;
+  --color-punch-red-900: #fad7da;
+
+  --color-honeydew: #f1faee;
+  --color-honeydew-100: #234c16;
+  --color-honeydew-200: #47982c;
+  --color-honeydew-300: #75ce57;
+  --color-honeydew-400: #b4e4a3;
+  --color-honeydew-500: #f1faee;
+  --color-honeydew-600: #f5fbf2;
+  --color-honeydew-700: #f7fcf6;
+  --color-honeydew-800: #fafdf9;
+  --color-honeydew-900: #fcfefc;
+
+  --color-frosted-blue: #a8dadc;
+  --color-frosted-blue-100: #163637;
+  --color-frosted-blue-200: #2c6d6f;
+  --color-frosted-blue-300: #42a3a6;
+  --color-frosted-blue-400: #70c3c6;
+  --color-frosted-blue-500: #a8dadc;
+  --color-frosted-blue-600: #b9e2e3;
+  --color-frosted-blue-700: #cae9ea;
+  --color-frosted-blue-800: #dcf0f1;
+  --color-frosted-blue-900: #edf8f8;
+
+  --color-cerulean: #457b9d;
+  --color-cerulean-100: #0e181f;
+  --color-cerulean-200: #1b313e;
+  --color-cerulean-300: #29495e;
+  --color-cerulean-400: #37627d;
+  --color-cerulean-500: #457b9d;
+  --color-cerulean-600: #6097b9;
+  --color-cerulean-700: #88b1cb;
+  --color-cerulean-800: #b0cbdc;
+  --color-cerulean-900: #d7e5ee;
+
+  --color-oxford-navy: #1d3557;
+  --color-oxford-navy-100: #060b12;
+  --color-oxford-navy-200: #0c1623;
+  --color-oxford-navy-300: #122035;
+  --color-oxford-navy-400: #172b46;
+  --color-oxford-navy-500: #1d3557;
+  --color-oxford-navy-600: #315a93;
+  --color-oxford-navy-700: #4e7fc4;
+  --color-oxford-navy-800: #89aad8;
+  --color-oxford-navy-900: #c4d4eb;
+}
 
 :root {
   --foreground-rgb: 255, 255, 255;
@@ -8,24 +63,15 @@
   --background-end: #000000;
 }
 
-/* Explicitly disable any potential modern color function defaults */
-@layer base {
-  :root {
-    --tw-colors-blue-500: #3b82f6;
-    --tw-colors-blue-600: #2563eb;
-    --tw-colors-green-400: #4ade80;
-  }
-}
-
 html, body {
   height: 100%;
   width: 100%;
   color: rgb(var(--foreground-rgb));
-  background: #060606;
-  overscroll-behavior-y: none; /* Prevent bounce effects */
+  background: var(--color-oxford-navy-100); /* Dark theme base from new palette */
+  overscroll-behavior-y: none;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Main scroll is in Feed container */
+  overflow: hidden;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
@@ -35,8 +81,8 @@ html, body {
 
 /* Hide scrollbar for IE, Edge and Firefox */
 .no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 @keyframes shimmer {
@@ -63,4 +109,68 @@ html, body {
 
 .animate-spin-custom {
   animation: spin 1s linear infinite;
+}
+
+/* Wiki Content Styling Override */
+.wiki-content {
+    color: #e5e7eb; /* gray-200 */
+}
+.wiki-content a {
+    color: var(--color-cerulean-400);
+    text-decoration: none;
+    font-weight: 600;
+}
+.wiki-content a:hover {
+    text-decoration: underline;
+}
+.wiki-content h1, .wiki-content h2, .wiki-content h3, .wiki-content h4 {
+    color: white;
+    font-weight: 800;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+.wiki-content p {
+    line-height: 1.8;
+    margin-bottom: 1.25em;
+}
+.wiki-content img {
+    border-radius: 12px;
+    margin: 1.5em 0;
+    max-width: 100%;
+    height: auto;
+}
+.wiki-content figure {
+    background: rgba(255,255,255,0.05);
+    padding: 10px;
+    border-radius: 12px;
+}
+.wiki-content figcaption {
+    font-size: 0.8em;
+    color: #9ca3af; /* gray-400 */
+    text-align: center;
+    margin-top: 8px;
+}
+/* Hide some Wikipedia elements that might be noisy */
+.wiki-content .mw-empty-elt,
+.wiki-content .mw-editsection,
+.wiki-content .hatnote,
+.wiki-content .ambox {
+    display: none;
+}
+/* Table handling */
+.wiki-content table {
+    display: block;
+    overflow-x: auto;
+    border-collapse: collapse;
+    margin: 1em 0;
+    width: 100%;
+}
+.wiki-content th, .wiki-content td {
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 8px 12px;
+    text-align: left;
+}
+.wiki-content th {
+    background: rgba(255,255,255,0.1);
+    font-weight: bold;
 }

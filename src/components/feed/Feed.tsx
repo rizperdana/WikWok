@@ -2,22 +2,38 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWikwokFeed } from '@/lib/hooks/useWikwokFeed';
+import { AuthButton } from '@/components/auth/AuthButton';
 import { WikiCard } from './WikiCard';
 import { AdCard } from './AdCard';
+import { SearchOverlay } from './SearchOverlay';
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, Globe, ChevronDown, Check } from 'lucide-react';
+import { Loader2, ChevronDown, Check, Search, ArrowLeft } from 'lucide-react';
 import { LANGUAGES } from '@/lib/constants/languages';
+import { WikiArticle, FeedItem } from '@/types';
 
 export function Feed() {
-  const { items, lang, setLang, fetchNextPage, hasNextPage, isFetching } = useWikwokFeed();
+  const { items: feedItems, lang, setLang, fetchNextPage, hasNextPage, isFetching } = useWikwokFeed();
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
+
   const [activeBg, setActiveBg] = useState<string | null>(null);
   const [isRegionOpen, setIsRegionOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<FeedItem[] | null>(null);
+  const [showTopControls, setShowTopControls] = useState(true);
+  const lastScrollTopRef = useRef(0);
+
+  // Scroll to Top when search state changes
+  useEffect(() => {
+    if (mainRef.current) {
+        mainRef.current.scrollTo(0, 0);
+    }
+  }, [searchResults]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !isFetching) {
+        if (entries[0].isIntersecting && hasNextPage && !isFetching && !searchResults) {
           fetchNextPage();
         }
       },
@@ -29,67 +45,125 @@ export function Feed() {
     }
 
     return () => observer.disconnect();
-  }, [hasNextPage, isFetching, fetchNextPage]);
+  }, [hasNextPage, isFetching, fetchNextPage, searchResults]);
 
-  if (items.length === 0 && isFetching) {
+  if (feedItems.length === 0 && isFetching && !searchResults) {
       return (
           <div className="h-screen w-full flex items-center justify-center bg-[#060606] text-white">
-              <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin-custom shadow-[0_0_20px_rgba(59,130,246,0.2)]"></div>
+              <div className="w-10 h-10 border-4 border-cerulean-500/20 border-t-cerulean-500 rounded-full animate-spin-custom shadow-[0_0_20px_rgba(69,123,157,0.2)]"></div>
           </div>
       );
   }
 
   const currentLang = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
+  const displayItems = searchResults || feedItems;
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+      const currentScrollTop = e.currentTarget.scrollTop;
+
+      // Auto-hide when scrolling down, Show when scrolling up
+      if (currentScrollTop > lastScrollTopRef.current && currentScrollTop > 100) {
+          setShowTopControls(false);
+      } else {
+          setShowTopControls(true);
+      }
+      lastScrollTopRef.current = currentScrollTop;
+  };
 
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[#060606] flex justify-center">
-      {/* Fixed Region Selector (Absolute Top Left) */}
-      <div
-        data-capture-hide
-        className="fixed z-[999]"
-        style={{ top: '24px', left: '24px' }}
+      {/* Top Controls Container (Auto-hide) */}
+      <motion.div
+        className="fixed top-0 left-0 w-full z-[999] pointer-events-none"
+        initial={{ y: 0 }}
+        animate={{ y: showTopControls ? 0 : -100 }}
+        transition={{ duration: 0.3 }}
+        onMouseEnter={() => setShowTopControls(true)} // Show on hover
       >
-          <div className="relative">
-              <button
-                onClick={() => setIsRegionOpen(!isRegionOpen)}
-                className="flex items-center gap-3 px-6 py-4 bg-black/60 backdrop-blur-2xl border border-white/20 rounded-full text-white text-sm font-black uppercase tracking-[0.2em] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] hover:bg-white/20 transition-all active:scale-95 group focus:outline-none"
-              >
-                  <span className="text-2xl leading-none drop-shadow-sm">{currentLang.flag}</span>
-                  <span className="drop-shadow-md">{currentLang.code}</span>
-                  <ChevronDown size={18} className={`transition-transform duration-300 ${isRegionOpen ? 'rotate-180' : ''}`} />
-              </button>
+        <div className="relative w-full h-[100px] pointer-events-auto">
+            {/* Fixed Region Selector (Absolute Top Left) */}
+            <div
+                data-capture-hide
+                className="absolute top-6 left-6"
+            >
+                <div className="relative">
+                    {!searchResults ? (
+                        <button
+                            onClick={() => setIsRegionOpen(!isRegionOpen)}
+                            className="flex items-center gap-3 px-6 py-4 bg-black/60 backdrop-blur-2xl border border-white/20 rounded-full text-white text-sm font-black uppercase tracking-[0.2em] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] hover:bg-white/20 transition-all active:scale-95 group focus:outline-none"
+                        >
+                            <span className="text-2xl leading-none drop-shadow-sm">{currentLang.flag}</span>
+                            <span className="drop-shadow-md">{currentLang.code}</span>
+                            <ChevronDown size={18} className={`transition-transform duration-300 ${isRegionOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => setSearchResults(null)}
+                            className="flex items-center gap-2 px-6 py-4 bg-punch-red-500 text-white rounded-full font-bold shadow-xl transition-all active:scale-95"
+                        >
+                            <ArrowLeft size={18} />
+                            <span>Back to Feed</span>
+                        </button>
+                    )}
 
-              <AnimatePresence>
-                  {isRegionOpen && (
-                      <motion.div
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          className="absolute top-full left-0 mt-4 w-64 bg-[#111111]/95 backdrop-blur-3xl border border-white/10 rounded-3xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] overflow-hidden z-[101]"
-                      >
-                          <div className="p-3 max-h-[70vh] overflow-y-auto no-scrollbar">
-                              {LANGUAGES.map((l) => (
-                                  <button
-                                      key={l.code}
-                                      onClick={() => {
-                                          setLang(l.code);
-                                          setIsRegionOpen(false);
-                                      }}
-                                      className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all mb-1 ${lang === l.code ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}
-                                  >
-                                      <div className="flex items-center gap-4">
-                                          <span className="text-xl leading-none">{l.flag}</span>
-                                          <span className="text-[11px] font-black uppercase tracking-widest">{l.name}</span>
-                                      </div>
-                                      {lang === l.code && <Check size={14} className="stroke-[3px]" />}
-                                  </button>
-                              ))}
-                          </div>
-                      </motion.div>
-                  )}
-              </AnimatePresence>
-          </div>
-      </div>
+                    <AnimatePresence>
+                        {isRegionOpen && !searchResults && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="absolute top-full left-0 mt-4 w-64 bg-[#111111]/95 backdrop-blur-3xl border border-white/10 rounded-3xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] overflow-hidden z-[101]"
+                            >
+                                <div className="p-3 max-h-[70vh] overflow-y-auto no-scrollbar">
+                                    {LANGUAGES.map((l) => (
+                                        <button
+                                            key={l.code}
+                                            onClick={() => {
+                                                setLang(l.code);
+                                                setIsRegionOpen(false);
+                                            }}
+                                            className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all mb-1 ${lang === l.code ? 'bg-cerulean-600 text-white shadow-lg shadow-cerulean-500/20' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <span className="text-xl leading-none">{l.flag}</span>
+                                                <span className="text-[11px] font-black uppercase tracking-widest">{l.name}</span>
+                                            </div>
+                                            {lang === l.code && <Check size={14} className="stroke-[3px]" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </div>
+
+            {/* Top Right Controls */}
+            <div className="absolute top-6 right-6 flex items-center gap-4">
+                <button
+                    onClick={() => setIsSearchOpen(true)}
+                    className="flex items-center justify-center w-[50px] h-[50px] rounded-full bg-black/60 backdrop-blur-2xl border border-white/20 text-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] hover:bg-white/20 transition-all active:scale-95 group focus:outline-none"
+                >
+                    <Search size={20} />
+                </button>
+                <AuthButton />
+            </div>
+        </div>
+      </motion.div>
+
+      <SearchOverlay
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        currentLang={lang}
+        onResults={(results) => {
+            const items: FeedItem[] = results.map(r => ({
+                type: 'article',
+                data: r,
+                id: crypto.randomUUID()
+            }));
+            setSearchResults(items);
+        }}
+      />
 
       {/* Screen-wide Dismiss Area for Dropdown */}
       {isRegionOpen && (
@@ -117,14 +191,14 @@ export function Feed() {
 
       {/* Desktop Left Sidebar: Trending/Nav */}
       <aside className="hidden lg:flex w-80 h-full flex-col p-6 z-20 relative">
-          <div className="mb-10 mt-16"> {/* Added mt-16 to avoid region selector collision */}
+          <div className="mb-10 mt-16">
               <h1 className="text-2xl font-black tracking-tighter text-white">WIKWOK</h1>
-              <p className="text-xs text-blue-500 font-bold uppercase tracking-widest">Discovery Engine</p>
+              <p className="text-xs text-cerulean-500 font-bold uppercase tracking-widest">Discovery Engine</p>
           </div>
 
           <nav className="flex flex-col gap-2">
-              <SidebarItem label="Home" active />
-              <SidebarItem label="Explore" />
+              <SidebarItem label="Home" active={!searchResults} onClick={() => setSearchResults(null)} />
+              <SidebarItem label="Explore" active={!!searchResults} onClick={() => setIsSearchOpen(true)} />
               <SidebarItem label="Notifications" />
               <SidebarItem label="Messages" />
               <SidebarItem label="Profile" />
@@ -138,8 +212,12 @@ export function Feed() {
       </aside>
 
       {/* Main Feed: 9:16 constraint on desktop */}
-      <main className="relative h-[100dvh] w-full lg:w-[450px] xl:w-[500px] snap-y snap-mandatory overflow-y-scroll overflow-x-hidden bg-[#060606] lg:bg-transparent touch-pan-y no-scrollbar !overflow-anchor-none z-20 shadow-2xl">
-        {items.map((item, index) => (
+      <main
+        ref={mainRef}
+        onScroll={handleScroll}
+        className="relative h-[100dvh] w-full lg:w-[450px] xl:w-[500px] snap-y snap-mandatory overflow-y-scroll overflow-x-hidden bg-[#060606] lg:bg-transparent touch-pan-y no-scrollbar !overflow-anchor-none z-20 shadow-2xl"
+      >
+        {displayItems.map((item, index) => (
           <div key={`${lang}-${item.id}`} className="h-[100dvh] w-full snap-start">
                {item.type === 'article' ? (
                    <WikiCard
@@ -153,16 +231,25 @@ export function Feed() {
           </div>
         ))}
 
-        {/* Loading Indicator / Intersection Target */}
-        <div
-          ref={loadMoreRef}
-          className="h-32 w-full flex items-center justify-center snap-start bg-transparent text-white"
-        >
-           {isFetching && (
-               <div className="w-8 h-8 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin-custom"></div>
-           )}
-           {!hasNextPage && items.length > 0 && <span className="text-sm text-white/30 font-bold tracking-widest uppercase">The End</span>}
-        </div>
+        {/* Loading Indicator / Intersection Target - Only show if not searching */}
+        {!searchResults && (
+            <div
+            ref={loadMoreRef}
+            className="h-32 w-full flex items-center justify-center snap-start bg-transparent text-white"
+            >
+            {isFetching && (
+                <div className="w-8 h-8 border-4 border-cerulean-500/20 border-t-cerulean-500 rounded-full animate-spin-custom"></div>
+            )}
+            {!hasNextPage && feedItems.length > 0 && <span className="text-sm text-white/30 font-bold tracking-widest uppercase">The End</span>}
+            </div>
+        )}
+
+        {searchResults && searchResults.length === 0 && (
+            <div className="h-full w-full flex flex-col items-center justify-center text-white p-8 opacity-50">
+                <Search size={48} className="mb-4" />
+                <p>No results found</p>
+            </div>
+        )}
       </main>
 
       {/* Desktop Right Sidebar: Post Info/Social */}
@@ -188,9 +275,12 @@ export function Feed() {
   );
 }
 
-function SidebarItem({ label, active = false }: { label: string, active?: boolean }) {
+function SidebarItem({ label, active = false, onClick }: { label: string, active?: boolean, onClick?: () => void }) {
     return (
-        <div className={`px-4 py-3 rounded-xl flex items-center gap-4 cursor-pointer transition-colors ${active ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}>
+        <div
+            onClick={onClick}
+            className={`px-4 py-3 rounded-xl flex items-center gap-4 cursor-pointer transition-colors ${active ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}
+        >
             <span className="font-bold">{label}</span>
         </div>
     )

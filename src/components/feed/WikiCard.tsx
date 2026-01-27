@@ -15,89 +15,135 @@ interface WikiCardProps {
 }
 
 export const WikiCard = memo(function WikiCard({ article, priority = false, onInView, onRead }: WikiCardProps) {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const bgImage = article.originalimage?.source;
   const [isTldr, setIsTldr] = useState(false);
+  // Interaction States
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0); // Placeholder or fetch real count
+
+  // Counts
+  const [counts, setCounts] = useState({
+      likes: 0,
+      comments: 0,
+      bookmarks: 0,
+      shares: 0
+  });
+
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Prefetch Article HTML if priority (likely next) or already rendered
+  // Prefetch Article HTML
   useEffect(() => {
     if (priority) {
         prefetchWikiPageHtml(article.title, article.lang);
     }
   }, [priority, article.title, article.lang]);
 
-  // Fetch initial status
+  // Fetch Public Stats & User Status
   useEffect(() => {
-    if (!user) {
-        setIsLiked(false);
-        setIsBookmarked(false);
-        return;
-    }
+    const fetchStatus = async () => {
+        const headers: any = {};
+        if (session?.access_token) {
+            headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
 
-    // Check Like
-    supabase.from('likes').select('id').eq('user_id', user.id).eq('article_url', article.content_urls.mobile.page).single()
-        .then(({data}) => setIsLiked(!!data));
+        try {
+            const res = await fetch(`/api/interactions?type=stats&url=${encodeURIComponent(article.content_urls.mobile.page)}`, { headers });
+            const data = await res.json();
 
-    // Check Bookmark
-    supabase.from('bookmarks').select('id').eq('user_id', user.id).eq('article_url', article.content_urls.mobile.page).single()
-        .then(({data}) => setIsBookmarked(!!data));
+            if (data.counts) {
+                setCounts(data.counts);
+            }
+            if (data.userStatus) {
+                setIsLiked(data.userStatus.liked);
+                setIsBookmarked(data.userStatus.bookmarked);
+            }
+        } catch (e) {
+            console.error("Failed to fetch interaction stats");
+        }
+    };
 
-  }, [user, article.content_urls.mobile.page]);
-
-  // Fetch Public Stats
-  useEffect(() => {
-    supabase.from('likes').select('*', { count: 'exact', head: true }).eq('article_url', article.content_urls.mobile.page)
-        .then(({count}) => setLikeCount(count || 0));
-  }, [article.content_urls.mobile.page]);
-
+    fetchStatus();
+  }, [user, session, article.content_urls.mobile.page, isCommentsOpen]); // Re-fetch when comments close/open to update counts? Ideally explicit trigger.
 
   const handleLike = async () => {
-    if (!user) return alert("Please login to like!");
+    if (!user || !session) return alert("Please login to like!");
 
-    if (isLiked) {
-        await supabase.from('likes').delete().eq('user_id', user.id).eq('article_url', article.content_urls.mobile.page);
-        setIsLiked(false);
-        setLikeCount(prev => Math.max(0, prev - 1));
-    } else {
-        await supabase.from('likes').insert({ user_id: user.id, article_url: article.content_urls.mobile.page });
-        setIsLiked(true);
-        setLikeCount(prev => prev + 1);
+    const oldLiked = isLiked;
+    setIsLiked(!oldLiked);
+    setCounts(prev => ({ ...prev, likes: oldLiked ? prev.likes - 1 : prev.likes + 1 }));
+
+    try {
+        await fetch('/api/interactions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
+                type: 'like',
+                article_url: article.content_urls.mobile.page
+            })
+        });
+    } catch (e) {
+        setIsLiked(oldLiked); // Revert
     }
   };
 
   const handleBookmark = async () => {
-    if (!user) return alert("Please login to save!");
+    if (!user || !session) return alert("Please login to save!");
 
-    if (isBookmarked) {
-        await supabase.from('bookmarks').delete().eq('user_id', user.id).eq('article_url', article.content_urls.mobile.page);
-        setIsBookmarked(false);
-    } else {
-        await supabase.from('bookmarks').insert({
-            user_id: user.id,
+    const oldBookmarked = isBookmarked;
+    setIsBookmarked(!oldBookmarked);
+    setCounts(prev => ({ ...prev, bookmarks: oldBookmarked ? prev.bookmarks - 1 : prev.bookmarks + 1 }));
+
+    await fetch('/api/interactions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+            type: 'bookmark',
             article_url: article.content_urls.mobile.page,
-            article_title: article.title,
-            article_summary: article.extract,
-            article_image: article.originalimage?.source || ""
-        });
-        setIsBookmarked(true);
-    }
+            payload: {
+                article_title: article.title,
+                article_summary: article.extract,
+                article_image: article.originalimage?.source || ""
+            }
+        })
+    });
   };
 
-    const handleShare = () => {
+  const handleShare = async () => {
         const shareUrl = `https://${article.lang || 'en'}.wikipedia.org/wiki/${encodeURIComponent(article.title.replace(/ /g, '_'))}`;
         const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+
+        // Optimistic update
+        setCounts(prev => ({ ...prev, shares: prev.shares + 1 }));
+
+        // Persist Share
+        fetch('/api/interactions', {
+            method: 'POST',
+            headers: {
+                 'Content-Type': 'application/json',
+                 // Optional auth for share
+                 ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+            },
+            body: JSON.stringify({
+                type: 'share',
+                article_url: article.content_urls.mobile.page,
+                payload: { platform: isDesktop ? 'clipboard' : 'native' }
+            })
+        }).catch(() => {});
 
         if (navigator.share && !isDesktop) {
             navigator.share({
                 title: article.title,
                 text: article.extract,
                 url: shareUrl
-            }).catch(() => {}); // Ignore errors/cancellations
+            }).catch(() => {});
         } else {
             navigator.clipboard.writeText(shareUrl);
             alert('Link copied to clipboard!');
@@ -229,14 +275,14 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
                 <ActionButton
                     onClick={handleLike}
                     icon={<Heart size={20} className={isLiked ? 'fill-punch-red-500 text-punch-red-500' : ''} />}
-                    label={likeCount > 0 ? `${likeCount}` : "Like"}
+                    label={counts.likes > 0 ? `${counts.likes}` : "Like"}
                     active={isLiked}
                 />
 
                 <ActionButton
                     onClick={() => setIsCommentsOpen(true)}
                     icon={<MessageCircle size={20} />}
-                    label="Comment"
+                    label={counts.comments > 0 ? `${counts.comments}` : "Comment"}
                 />
 
                 <ActionButton
@@ -249,14 +295,14 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
                 <ActionButton
                     onClick={handleBookmark}
                     icon={<Bookmark size={20} className={isBookmarked ? 'fill-white text-cerulean-500' : ''} />}
-                    label="Save"
+                    label={counts.bookmarks > 0 ? `${counts.bookmarks}` : "Save"}
                     active={isBookmarked}
                 />
 
                 <ActionButton
                     onClick={handleShare}
                     icon={<Share2 size={20} />}
-                    label="Share"
+                    label={counts.shares > 0 ? `${counts.shares}` : "Share"}
                 />
             </div>
         </div>

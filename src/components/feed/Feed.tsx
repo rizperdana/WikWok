@@ -102,24 +102,32 @@ export function Feed() {
                 className="absolute top-6 left-6"
             >
                 <div className="relative">
-                    {!searchResults ? (
+                    {searchResults ? (
+                        <button
+                            onClick={() => {
+                                if (searchViewMode === 'feed') {
+                                    setSearchViewMode('grid');
+                                } else {
+                                    setSearchResults(null);
+                                }
+                            }}
+                            className="flex items-center gap-2 px-6 py-4 bg-punch-red-500 text-white rounded-full font-bold shadow-xl transition-all active:scale-95 z-50 pointer-events-auto"
+                        >
+                            <ArrowLeft size={18} />
+                            <span>{searchViewMode === 'feed' ? 'Results' : 'Back'}</span>
+                        </button>
+                    ) : (
                         <button
                             onClick={() => setIsRegionOpen(!isRegionOpen)}
-                            className="flex items-center gap-3 px-6 py-4 bg-black/60 backdrop-blur-2xl border border-white/20 rounded-full text-white text-sm font-black uppercase tracking-[0.2em] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] hover:bg-white/20 transition-all active:scale-95 group focus:outline-none"
+                            className="flex items-center gap-3 px-6 py-4 bg-black/60 backdrop-blur-2xl border border-white/20 rounded-full text-white text-sm font-black uppercase tracking-[0.2em] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] hover:bg-white/20 transition-all active:scale-95 group focus:outline-none pointer-events-auto"
                         >
                             <span className="text-2xl leading-none drop-shadow-sm">{currentLang.flag}</span>
                             <span className="drop-shadow-md">{currentLang.code}</span>
                             <ChevronDown size={18} className={`transition-transform duration-300 ${isRegionOpen ? 'rotate-180' : ''}`} />
                         </button>
-                    ) : (
-                        <button
-                            onClick={() => setSearchResults(null)}
-                            className="flex items-center gap-2 px-6 py-4 bg-punch-red-500 text-white rounded-full font-bold shadow-xl transition-all active:scale-95"
-                        >
-                            <ArrowLeft size={18} />
-                            <span>Back to Feed</span>
-                        </button>
                     )}
+
+
 
                     <AnimatePresence>
                         {isRegionOpen && !searchResults && (

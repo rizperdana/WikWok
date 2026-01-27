@@ -23,23 +23,33 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setError(null);
 
     try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        onClose();
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
-        if (error) throw error;
-        // Optionally show check email message
-        alert('Check your email for the confirmation link!');
-        onClose();
+      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
+
+      const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+          throw new Error(data.error || 'Authentication failed');
       }
+
+      // If success, we manually sync the session to the client SDK so
+      // AuthContext and other components react instantly.
+      if (data.session) {
+          await supabase.auth.setSession({
+              access_token: data.session.access_token,
+              refresh_token: data.session.refresh_token,
+          });
+      } else if (!isLogin && !data.session) {
+          // Signup without auto-login (e.g. email confirmation required)
+          alert('Check your email for the confirmation link!');
+      }
+
+      onClose();
     } catch (err: any) {
       setError(err.message);
     } finally {

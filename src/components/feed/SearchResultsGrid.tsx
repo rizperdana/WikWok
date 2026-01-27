@@ -11,9 +11,9 @@ interface SearchResultsGridProps {
 
 export function SearchResultsGrid({ results, onSelect }: SearchResultsGridProps) {
   return (
-    <div className="w-full min-h-screen bg-[#060606] pt-24 pb-20 px-4 overflow-y-auto">
+    <div className="w-full h-full bg-[#060606] pt-24 pb-20 px-4 overflow-y-auto">
       <h2 className="text-white text-xl font-bold mb-6 px-2">Top Results</h2>
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         {results.map((result, index) => (
           <motion.div
             key={`${result.pageid}-${index}`}
@@ -23,10 +23,14 @@ export function SearchResultsGrid({ results, onSelect }: SearchResultsGridProps)
             onClick={() => onSelect(index)}
             className="aspect-[3/4] relative rounded-xl overflow-hidden bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors group"
           >
-            {result.thumbnail ? (
+            {result.originalimage ? (
               <img
-                src={result.thumbnail.source}
+                src={result.originalimage.source}
                 alt={result.title}
+                onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement?.classList.add('fallback-icon');
+                }}
                 className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-110 duration-500"
               />
             ) : (
@@ -34,6 +38,11 @@ export function SearchResultsGrid({ results, onSelect }: SearchResultsGridProps)
                 <FileText size={48} />
               </div>
             )}
+
+            {/* Fallback Icon Container - visible if image fails or is missing */}
+            <div className="hidden fallback-icon:flex absolute inset-0 items-center justify-center text-white/20">
+                 <FileText size={48} />
+            </div>
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
 

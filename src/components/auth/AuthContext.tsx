@@ -36,6 +36,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
+    try {
+        await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}
+        });
+    } catch (e) {
+        console.error("Logout failed at API", e);
+    }
+    // Always sign out locally
     await supabase.auth.signOut();
   };
 

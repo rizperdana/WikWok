@@ -15,6 +15,8 @@ export interface WikiArticle {
     };
   };
   lang?: string; // added for checking which wiki it came from
+  pageid?: number;
+  ns?: number;
 }
 
 export type FeedItem =

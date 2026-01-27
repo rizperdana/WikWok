@@ -24,8 +24,6 @@ export function Feed() {
   const [isRegionOpen, setIsRegionOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<FeedItem[] | null>(null);
-  const [showTopControls, setShowTopControls] = useState(true);
-  const lastScrollTopRef = useRef(0);
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([]);
   const [readingArticle, setReadingArticle] = useState<WikiArticle | null>(null);
 
@@ -73,33 +71,21 @@ export function Feed() {
   const currentLang = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
   const displayItems = searchResults || feedItems;
 
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-      const currentScrollTop = e.currentTarget.scrollTop;
-
-      // Auto-hide when scrolling down, Show when scrolling up
-      if (currentScrollTop > lastScrollTopRef.current && currentScrollTop > 100) {
-          setShowTopControls(false);
-      } else {
-          setShowTopControls(true);
-      }
-      lastScrollTopRef.current = currentScrollTop;
-  };
-
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[#060606] flex justify-center">
       {/* Top Controls Container (Auto-hide) */}
+      {/* Top Controls Container */}
       <motion.div
         className="fixed top-0 left-0 w-full z-[999] pointer-events-none"
         initial={{ y: 0 }}
-        animate={{ y: showTopControls ? 0 : -100 }}
+        animate={{ y: 0 }}
         transition={{ duration: 0.3 }}
-        onMouseEnter={() => setShowTopControls(true)} // Show on hover
       >
         <div className="relative w-full h-[100px] pointer-events-auto">
-            {/* Fixed Region Selector (Absolute Top Left) */}
+            {/* Fixed Region Selector */}
             <div
                 data-capture-hide
-                className="absolute top-6 left-6"
+                className="absolute top-4 left-4 lg:top-6 lg:left-6"
             >
                 <div className="relative">
                     {searchResults ? (
@@ -111,23 +97,21 @@ export function Feed() {
                                     setSearchResults(null);
                                 }
                             }}
-                            className="flex items-center gap-2 px-6 py-4 bg-punch-red-500 text-white rounded-full font-bold shadow-xl transition-all active:scale-95 z-50 pointer-events-auto"
+                            className="flex items-center gap-2 px-4 py-2 lg:px-6 lg:py-4 bg-punch-red-500 text-white rounded-full font-bold shadow-xl transition-all active:scale-95 z-50 pointer-events-auto"
                         >
-                            <ArrowLeft size={18} />
-                            <span>{searchViewMode === 'feed' ? 'Results' : 'Back'}</span>
+                            <ArrowLeft size={16} className="lg:w-[18px] lg:h-[18px]" />
+                            <span className="text-xs lg:text-base">{searchViewMode === 'feed' ? 'Results' : 'Back'}</span>
                         </button>
                     ) : (
                         <button
                             onClick={() => setIsRegionOpen(!isRegionOpen)}
-                            className="flex items-center gap-3 px-6 py-4 bg-black/60 backdrop-blur-2xl border border-white/20 rounded-full text-white text-sm font-black uppercase tracking-[0.2em] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] hover:bg-white/20 transition-all active:scale-95 group focus:outline-none pointer-events-auto"
+                            className="flex items-center gap-2 lg:gap-3 px-4 py-2 lg:px-6 lg:py-4 bg-black/60 backdrop-blur-2xl border border-white/20 rounded-full text-white text-xs lg:text-sm font-black uppercase tracking-[0.2em] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] hover:bg-white/20 transition-all active:scale-95 group focus:outline-none pointer-events-auto"
                         >
-                            <span className="text-2xl leading-none drop-shadow-sm">{currentLang.flag}</span>
+                            <span className="text-lg lg:text-2xl leading-none drop-shadow-sm">{currentLang.flag}</span>
                             <span className="drop-shadow-md">{currentLang.code}</span>
-                            <ChevronDown size={18} className={`transition-transform duration-300 ${isRegionOpen ? 'rotate-180' : ''}`} />
+                            <ChevronDown size={14} className={`lg:w-[18px] lg:h-[18px] transition-transform duration-300 ${isRegionOpen ? 'rotate-180' : ''}`} />
                         </button>
                     )}
-
-
 
                     <AnimatePresence>
                         {isRegionOpen && !searchResults && (
@@ -162,12 +146,12 @@ export function Feed() {
             </div>
 
             {/* Top Right Controls */}
-            <div className="absolute top-6 right-6 flex items-center gap-4 pointer-events-auto">
+            <div className="absolute top-4 right-4 lg:top-6 lg:right-6 flex items-center gap-3 lg:gap-4 pointer-events-auto">
                 <button
                     onClick={() => setIsSearchOpen(true)}
-                    className="flex items-center justify-center w-[50px] h-[50px] rounded-full bg-black/60 backdrop-blur-2xl border border-white/20 text-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] hover:bg-white/20 transition-all active:scale-95 group focus:outline-none"
+                    className="flex items-center justify-center w-9 h-9 lg:w-[50px] lg:h-[50px] rounded-full bg-black/60 backdrop-blur-2xl border border-white/20 text-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] hover:bg-white/20 transition-all active:scale-95 group focus:outline-none lg:hidden"
                 >
-                    <Search size={20} />
+                    <Search size={16} className="lg:w-[20px] lg:h-[20px]" />
                 </button>
                 <AuthButton />
             </div>
@@ -242,7 +226,7 @@ export function Feed() {
       {searchResults && searchViewMode === 'grid' ? (
         <main className="relative h-[100dvh] w-full lg:w-[450px] xl:w-[500px] bg-[#060606] lg:bg-transparent z-20 shadow-2xl overflow-hidden">
             <SearchResultsGrid
-                results={searchResults.map(item => item.data)}
+                results={searchResults.filter(item => item.type === 'article').map(item => (item as Extract<FeedItem, { type: 'article' }>).data)}
                 onSelect={(index) => {
                     setSearchViewMode('feed');
                     // Small timeout to allow render, then scroll
@@ -256,7 +240,6 @@ export function Feed() {
       ) : (
       <main
         ref={mainRef}
-        onScroll={handleScroll}
         className="relative h-[100dvh] w-full lg:w-[450px] xl:w-[500px] snap-y snap-mandatory overflow-y-scroll overflow-x-hidden bg-[#060606] lg:bg-transparent touch-pan-y no-scrollbar !overflow-anchor-none z-20 shadow-2xl"
       >
         {displayItems.length > 0 ? (

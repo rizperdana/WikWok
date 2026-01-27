@@ -23,9 +23,9 @@ export function AuthButton() {
             setIsAuthOpen(true);
           }
         }}
-        className="fixed top-6 right-6 z-[999] flex items-center justify-center w-[50px] h-[50px] rounded-full bg-black/60 backdrop-blur-2xl border border-white/20 text-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] hover:bg-white/20 transition-all active:scale-95 group focus:outline-none"
+        className="flex items-center justify-center w-9 h-9 lg:w-[50px] lg:h-[50px] rounded-full bg-black/60 backdrop-blur-2xl border border-white/20 text-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] hover:bg-white/20 transition-all active:scale-95 group focus:outline-none"
       >
-        {user ? <User size={20} /> : <LogIn size={20} />}
+        {user ? <User size={16} className="lg:w-[20px] lg:h-[20px]" /> : <LogIn size={16} className="lg:w-[20px] lg:h-[20px]" />}
       </button>
 
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />

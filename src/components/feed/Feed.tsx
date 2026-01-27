@@ -6,6 +6,7 @@ import { AuthButton } from '@/components/auth/AuthButton';
 import { WikiCard } from './WikiCard';
 import { AdCard } from './AdCard';
 import { SearchOverlay } from './SearchOverlay';
+import { SearchResultsGrid } from './SearchResultsGrid';
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, ChevronDown, Check, Search, ArrowLeft } from 'lucide-react';
 import { LANGUAGES } from '@/lib/constants/languages';
@@ -18,6 +19,7 @@ export function Feed() {
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
 
+  const [searchViewMode, setSearchViewMode] = useState<'grid' | 'feed'>('grid');
   const [activeBg, setActiveBg] = useState<string | null>(null);
   const [isRegionOpen, setIsRegionOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -152,7 +154,7 @@ export function Feed() {
             </div>
 
             {/* Top Right Controls */}
-            <div className="absolute top-6 right-6 flex items-center gap-4">
+            <div className="absolute top-6 right-6 flex items-center gap-4 pointer-events-auto">
                 <button
                     onClick={() => setIsSearchOpen(true)}
                     className="flex items-center justify-center w-[50px] h-[50px] rounded-full bg-black/60 backdrop-blur-2xl border border-white/20 text-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] hover:bg-white/20 transition-all active:scale-95 group focus:outline-none"
@@ -175,6 +177,7 @@ export function Feed() {
                 id: crypto.randomUUID()
             }));
             setSearchResults(items);
+            setSearchViewMode('grid');
         }}
       />
 
@@ -204,9 +207,11 @@ export function Feed() {
 
       {/* Desktop Left Sidebar: Trending/Nav */}
       <aside className="hidden lg:flex w-80 h-full flex-col p-6 z-20 relative">
-          <div className="mb-10 mt-16">
-              <h1 className="text-2xl font-black tracking-tighter text-white">WIKWOK</h1>
-              <p className="text-xs text-cerulean-500 font-bold uppercase tracking-widest">Discovery Engine</p>
+          <div className="mb-10 mt-16 px-2">
+              <div className="relative w-32 h-32">
+                 <img src="/icon.png" alt="WIKWOK" className="w-full h-full object-contain" />
+              </div>
+              <p className="text-xs text-cerulean-500 font-bold uppercase tracking-widest mt-2 pl-2">Discovery Engine</p>
           </div>
 
           <nav className="flex flex-col gap-2">
@@ -219,31 +224,54 @@ export function Feed() {
 
           <div className="mt-auto pt-6">
               <p className="text-[10px] text-white/20 leading-relaxed uppercase tracking-widest font-bold">
-                  About • Newsroom • Contact • Careers • ByteDance • 2026 Wikwok
+                  2026 Wikwok
               </p>
           </div>
       </aside>
 
       {/* Main Feed: 9:16 constraint on desktop */}
+      {/* Main Feed or Grid View */}
+      {searchResults && searchViewMode === 'grid' ? (
+        <main className="relative h-[100dvh] w-full lg:w-[450px] xl:w-[500px] bg-[#060606] lg:bg-transparent z-20 shadow-2xl overflow-hidden">
+            <SearchResultsGrid
+                results={searchResults.map(item => item.data)}
+                onSelect={(index) => {
+                    setSearchViewMode('feed');
+                    // Small timeout to allow render, then scroll
+                    setTimeout(() => {
+                        const element = document.getElementById(`card-${index}`);
+                        element?.scrollIntoView();
+                    }, 50);
+                }}
+            />
+        </main>
+      ) : (
       <main
         ref={mainRef}
         onScroll={handleScroll}
         className="relative h-[100dvh] w-full lg:w-[450px] xl:w-[500px] snap-y snap-mandatory overflow-y-scroll overflow-x-hidden bg-[#060606] lg:bg-transparent touch-pan-y no-scrollbar !overflow-anchor-none z-20 shadow-2xl"
       >
-        {displayItems.map((item, index) => (
-          <div key={`${lang}-${item.id}`} className="h-[100dvh] w-full snap-start">
-               {item.type === 'article' ? (
-                   <WikiCard
-                     article={item.data}
-                     priority={index < 2}
-                     onInView={setActiveBg}
-                     onRead={setReadingArticle}
-                   />
-               ) : (
-                   <AdCard />
-               )}
-          </div>
-        ))}
+        {displayItems.length > 0 ? (
+            displayItems.map((item, index) => (
+            <div key={`${lang}-${item.id}`} id={searchResults ? `card-${index}` : undefined} className="h-[100dvh] w-full snap-start">
+                 {item.type === 'article' ? (
+                    <WikiCard
+                      article={item.data}
+                      priority={index < 2}
+                      onInView={setActiveBg}
+                      onRead={setReadingArticle}
+                    />
+                 ) : (
+                    <AdCard />
+                 )}
+            </div>
+          ))
+        ) : (
+             <div className="h-full w-full flex flex-col items-center justify-center text-white p-8 opacity-50">
+                <Search size={48} className="mb-4" />
+                <p>No results found</p>
+            </div>
+        )}
 
         {/* Loading Indicator / Intersection Target - Only show if not searching */}
         {!searchResults && (
@@ -260,14 +288,8 @@ export function Feed() {
             {!hasNextPage && feedItems.length > 0 && <span className="text-sm text-white/30 font-bold tracking-widest uppercase">The End</span>}
             </div>
         )}
-
-        {searchResults && searchResults.length === 0 && (
-            <div className="h-full w-full flex flex-col items-center justify-center text-white p-8 opacity-50">
-                <Search size={48} className="mb-4" />
-                <p>No results found</p>
-            </div>
-        )}
       </main>
+      )}
 
       {/* Desktop Right Sidebar: Post Info/Social */}
       <aside className="hidden xl:flex w-96 h-full flex-col p-6 z-20">
@@ -284,7 +306,19 @@ export function Feed() {
               <div className="space-y-4">
                   {trendingTopics.length > 0 ? (
                       trendingTopics.map((topic, i) => (
-                          <PulseItem key={i} label={topic.title} count={topic.views} />
+                          <PulseItem
+                            key={i}
+                            label={topic.title}
+                            count={topic.views}
+                            onClick={() => setReadingArticle({
+                                title: topic.title,
+                                lang: lang,
+                                pageid: 0,
+                                ns: 0,
+                                extract: '',
+                                thumbnail: undefined
+                            } as any)}
+                          />
                       ))
                   ) : (
                       <p className="text-xs text-white/30">Loading trends...</p>
@@ -314,9 +348,12 @@ function SidebarItem({ label, active = false, onClick }: { label: string, active
     )
 }
 
-function PulseItem({ label, count }: { label: string, count: string }) {
+function PulseItem({ label, count, onClick }: { label: string, count: string, onClick?: () => void }) {
     return (
-        <div className="p-4 rounded-xl bg-white/5 flex justify-between items-center transition-all hover:bg-white/10 group cursor-pointer">
+        <div
+            onClick={onClick}
+            className="p-4 rounded-xl bg-white/5 flex justify-between items-center transition-all hover:bg-white/10 group cursor-pointer"
+        >
             <span className="text-sm border-b border-transparent group-hover:border-white transition-all truncate mr-2">{label}</span>
             <span className="text-xs font-mono text-indigo-400">{count}</span>
         </div>

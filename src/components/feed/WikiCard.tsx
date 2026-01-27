@@ -88,19 +88,21 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
     }
   };
 
-  const handleShare = () => {
-      const shareUrl = `https://${article.lang || 'en'}.wikipedia.org/wiki/${encodeURIComponent(article.title.replace(/ /g, '_'))}`;
-      if (navigator.share) {
-          navigator.share({
-              title: article.title,
-              text: article.extract,
-              url: shareUrl
-          });
-      } else {
-          navigator.clipboard.writeText(shareUrl);
-          alert('Link copied to clipboard!');
-      }
-  };
+    const handleShare = () => {
+        const shareUrl = `https://${article.lang || 'en'}.wikipedia.org/wiki/${encodeURIComponent(article.title.replace(/ /g, '_'))}`;
+        const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+
+        if (navigator.share && !isDesktop) {
+            navigator.share({
+                title: article.title,
+                text: article.extract,
+                url: shareUrl
+            }).catch(() => {}); // Ignore errors/cancellations
+        } else {
+            navigator.clipboard.writeText(shareUrl);
+            alert('Link copied to clipboard!');
+        }
+    };
 
   return (
     <motion.div

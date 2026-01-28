@@ -157,33 +157,42 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
         className="relative h-[100dvh] w-full snap-start overflow-hidden bg-black text-white"
     >
       {/* Background Image Layer */}
-      {bgImage ? (
-        <div className="absolute inset-0 z-0 h-full w-full">
-          <img
-            src={bgImage}
-            alt={article.title}
-            className="h-full w-full object-cover opacity-60"
-            loading={priority ? "eager" : "lazy"}
-          />
-          {/* TikTok-style bottom shading gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[rgba(0,0,0,1)] via-[rgba(0,0,0,0.4)] to-[rgba(0,0,0,0)] z-10" />
-        </div>
-      ) : (
-        /* Fallback Gradient */
-        <div className="absolute inset-0 z-0 bg-gradient-to-br from-gray-900 to-black" />
-      )}
+      {/* Background Image Layer */}
+      <div className="absolute inset-0 z-0 h-full w-full bg-[#1a1a1a]">
+        {bgImage && (
+            <motion.img
+                initial={{ scale: 1.1, opacity: 0, filter: 'blur(10px)' }}
+                animate={{
+                    scale: 1,
+                    opacity: 0.6,
+                    filter: 'blur(0px)'
+                }}
+                transition={{ duration: 0.7, ease: "easeOut" }}
+                src={bgImage}
+                alt={article.title}
+                className="h-full w-full object-cover"
+                loading={priority ? "eager" : "lazy"}
+                // @ts-ignore
+                fetchPriority={priority ? "high" : "auto"}
+            />
+        )}
+
+        {/* TikTok-style bottom shading gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[rgba(0,0,0,0.9)] via-[rgba(0,0,0,0.3)] to-[rgba(0,0,0,0.1)] z-10" />
+      </div>
 
       {/* Main Content Area */}
-      <div className="relative z-20 flex h-full flex-col justify-end p-6 pb-16 md:pb-8 max-w-2xl mx-auto w-full">
-        <div className="flex flex-col gap-10 w-full">
+      <div className="absolute inset-x-0 bottom-0 z-20 flex w-full flex-row items-end justify-between p-4 pb-20 md:pb-8 max-w-2xl mx-auto pointer-events-none">
+        {/* Left Side: Text Content */}
+        <div className="flex-1 flex flex-col gap-4 pointer-events-auto pr-12">
             {/* Header / Title */}
             <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 className="flex flex-col gap-2"
             >
-                <h1 className="text-4xl md:text-6xl font-black leading-[1.05] text-white drop-shadow-2xl text-balance tracking-tighter">
+                <h1 className="text-2xl md:text-4xl font-black leading-tight text-white drop-shadow-lg text-balance tracking-tighter line-clamp-3">
                     {article.title}
                 </h1>
             </motion.div>
@@ -196,69 +205,63 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="prose prose-invert prose-lg leading-relaxed text-white drop-shadow-md font-medium"
+                    className="prose prose-invert prose-sm md:prose-base leading-snug text-white/90 drop-shadow-md font-medium"
                 >
                     {isTldr ? (
-                        <div className="flex flex-col gap-6 h-[65dvh] overflow-y-auto no-scrollbar scroll-smooth">
-                            <div className="flex items-center gap-3 text-blue-400">
-                                <Sparkles size={18} className="animate-pulse" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Proper AI Intelligence Report</span>
+                       <div className="bg-black/60 backdrop-blur-xl p-6 rounded-t-3xl border border-white/10 h-[85vh] overflow-y-auto no-scrollbar shadow-2xl absolute bottom-0 left-0 right-0 z-50">
+                            <div className="flex items-center gap-2 text-blue-400 mb-6 sticky top-0 bg-black/50 backdrop-blur-md p-2 -mx-2 -mt-2 rounded-t-xl z-20">
+                                <Sparkles size={20} className="animate-pulse" />
+                                <span className="text-xs font-black uppercase tracking-[0.2em]">AI Summary</span>
                             </div>
 
-                            <div className="space-y-6">
-                                <section className="space-y-2">
-                                    <h4 className="text-xs font-black uppercase tracking-widest text-white/40">Executive Summary</h4>
-                                    <p className="text-white text-lg font-bold leading-relaxed">
+                            <div className="space-y-8">
+                                <section>
+                                    <h4 className="text-xs font-black uppercase tracking-widest text-white/50 mb-3">Executive Summary</h4>
+                                    <p className="text-white text-lg md:text-xl font-bold leading-relaxed">
                                         {article.extract.split('.').slice(0, 1).join('.')}.
                                     </p>
                                 </section>
 
-                                <section className="space-y-3">
-                                    <h4 className="text-xs font-black uppercase tracking-widest text-white/40">Key Insights</h4>
-                                    <ul className="space-y-4 m-0 p-0 list-none">
-                                        <li className="flex gap-4 items-start">
-                                            <span className="h-1.5 w-1.5 rounded-full bg-blue-500 mt-2 shrink-0 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
-                                            <span className="text-white/90 text-sm leading-relaxed font-medium">
-                                                {article.extract.split('.').slice(1, 2).join('.') || "Contextual discovery of subject significance."}
-                                            </span>
+                                <section>
+                                    <h4 className="text-xs font-black uppercase tracking-widest text-white/50 mb-3">Key Insights</h4>
+                                    <ul className="space-y-4">
+                                        <li className="flex gap-4 text-base md:text-lg text-white/90 leading-relaxed">
+                                            <span className="w-2 h-2 rounded-full bg-blue-500 mt-2.5 shrink-0 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+                                            <span>{article.extract.split('.').slice(1, 2).join('.') || "Highlights critical evolution in the subject matter."}.</span>
                                         </li>
-                                        <li className="flex gap-4 items-start">
-                                            <span className="h-1.5 w-1.5 rounded-full bg-blue-500 mt-2 shrink-0 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
-                                            <span className="text-white/90 text-sm leading-relaxed font-medium">
-                                                Verified data points indicate unique intersection of global trends.
-                                            </span>
+                                        <li className="flex gap-4 text-base md:text-lg text-white/90 leading-relaxed">
+                                            <span className="w-2 h-2 rounded-full bg-blue-500 mt-2.5 shrink-0 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+                                            <span>Significance verified by global knowledge graph data.</span>
                                         </li>
                                     </ul>
                                 </section>
 
-                                <section className="space-y-2 p-4 bg-white/5 rounded-2xl border border-white/5">
-                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">Impact Analysis</h4>
-                                    <p className="text-xs text-white/60 leading-relaxed font-medium italic">
-                                        AI Analysis: This article represents a critical node in contemporary knowledge discovery.
-                                    </p>
-                                </section>
-                            </div>
-
-                            <div className="pt-4 pb-2">
                                 <button
                                     onClick={() => onRead?.(article)}
-                                    className="inline-flex items-center gap-2 !text-white !font-black !no-underline hover:opacity-80 transition-opacity uppercase text-[10px] tracking-widest bg-blue-600 px-6 py-3 rounded-full shadow-lg shadow-blue-500/20"
+                                    className="w-full py-4 mt-4 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 font-bold text-sm uppercase tracking-widest rounded-xl transition-all border border-blue-500/30 flex items-center justify-center gap-2"
                                 >
-                                    Read Article
-                                    <ExternalLink size={14} className="stroke-[3px]" />
+                                    Read Full Analysis &rarr;
                                 </button>
                             </div>
-                        </div>
+                       </div>
                     ) : (
-                        <div className="relative">
+                        <div
+                            className="relative cursor-pointer group"
+                            onClick={() => onRead?.(article)}
+                        >
                             <div className="max-h-[35dvh] overflow-hidden">
-                                <span className="line-clamp-[8] md:line-clamp-[12] block text-white/90">
-                                    {article.extract}
+                                <span className="line-clamp-[8] md:line-clamp-[12] block text-white/90 group-hover:text-white transition-colors">
+                                    {article.extract.length > 800
+                                        ? `${article.extract.slice(0, 800)}...`
+                                        : article.extract}
                                 </span>
                             </div>
                             <div className="mt-4">
                                 <button
-                                    onClick={() => onRead?.(article)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onRead?.(article);
+                                    }}
                                     className="inline-flex items-center gap-2 !text-white !font-black hover:opacity-80 transition-opacity uppercase text-xs tracking-widest drop-shadow-lg"
                                 >
                                     Read Article
@@ -269,42 +272,46 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
                     )}
                 </motion.div>
             </AnimatePresence>
+        </div>
 
-            {/* Refined 5-Column Action Bar: Like, Comment, AI, Save, Share */}
-            <div data-capture-hide className="grid grid-cols-5 gap-2 pt-2">
-                <ActionButton
-                    onClick={handleLike}
-                    icon={<Heart size={20} className={isLiked ? 'fill-punch-red-500 text-punch-red-500' : ''} />}
-                    label={counts.likes > 0 ? `${counts.likes}` : "Like"}
-                    active={isLiked}
-                />
+        {/* Right Side: Action Bar (TikTok Style) */}
+        <div data-capture-hide className="flex flex-col items-center gap-6 pointer-events-auto w-[60px] pb-4">
 
-                <ActionButton
-                    onClick={() => setIsCommentsOpen(true)}
-                    icon={<MessageCircle size={20} />}
-                    label={counts.comments > 0 ? `${counts.comments}` : "Comment"}
-                />
 
-                <ActionButton
-                    onClick={() => setIsTldr(!isTldr)}
-                    icon={<Sparkles size={20} />}
-                    label="AI"
-                    active={isTldr}
-                />
+            <ActionButton
+                onClick={handleLike}
+                icon={<Heart size={28} className={`transition-all ${isLiked ? 'fill-red-500 text-red-500 scale-110' : 'text-white'}`} />}
+                label={counts.likes > 0 ? `${counts.likes}` : "Like"}
+                active={isLiked}
+            />
 
-                <ActionButton
-                    onClick={handleBookmark}
-                    icon={<Bookmark size={20} className={isBookmarked ? 'fill-white text-cerulean-500' : ''} />}
-                    label={counts.bookmarks > 0 ? `${counts.bookmarks}` : "Save"}
-                    active={isBookmarked}
-                />
+            <ActionButton
+                onClick={() => setIsCommentsOpen(true)}
+                icon={<MessageCircle size={26} className="text-white" />}
+                label={counts.comments > 0 ? `${counts.comments}` : "Comment"}
+            />
 
-                <ActionButton
-                    onClick={handleShare}
-                    icon={<Share2 size={20} />}
-                    label={counts.shares > 0 ? `${counts.shares}` : "Share"}
-                />
-            </div>
+            <ActionButton
+                onClick={() => setIsTldr(!isTldr)}
+                icon={<Sparkles size={26} className={isTldr ? "text-blue-400 fill-blue-400/20" : "text-white"} />}
+                label="AI"
+                active={isTldr}
+            />
+
+            <ActionButton
+                onClick={handleBookmark}
+                icon={<Bookmark size={26} className={isBookmarked ? 'fill-yellow-500 text-yellow-500' : 'text-white'} />}
+                label={counts.bookmarks > 0 ? `${counts.bookmarks}` : "Save"}
+                active={isBookmarked}
+            />
+
+            <ActionButton
+                onClick={handleShare}
+                icon={<Share2 size={26} className="text-white" />}
+                label="Share"
+            />
+
+
         </div>
       </div>
 
@@ -327,33 +334,27 @@ interface ActionButtonProps {
 }
 
 function ActionButton({ icon, label, onClick, href, active }: ActionButtonProps) {
-    const baseStyles = "flex-1 min-h-[60px] flex flex-col items-center justify-center gap-1.5 rounded-2xl transition-all active:scale-[0.9] select-none touch-manipulation shadow-lg border-0 transition-colors duration-200";
-
-    // Strictly White theme as requested
-    const activeStyles = "bg-blue-600/90 text-white";
-    const inactiveStyles = "bg-white/10 backdrop-blur-md text-white hover:bg-white/20";
+    const baseStyles = "flex flex-col items-center justify-center gap-1 transition-all active:scale-90 select-none touch-manipulation cursor-pointer filter hover:brightness-110";
 
     const content = (
-        <div className="flex flex-col items-center text-white">
-            <div className="mb-0.5">
+        <div className="flex flex-col items-center text-white drop-shadow-md">
+            <div className="p-2">
                 {icon}
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest leading-none">{label}</span>
+            <span className="text-[12px] font-semibold tracking-wide shadow-black drop-shadow-md">{label}</span>
         </div>
     );
 
-    const finalStyles = `${baseStyles} ${active ? activeStyles : inactiveStyles}`;
-
     if (href) {
         return (
-            <a href={href} target="_blank" rel="noopener noreferrer" className={finalStyles} style={{ textDecoration: 'none' }}>
+            <a href={href} target="_blank" rel="noopener noreferrer" className={baseStyles} style={{ textDecoration: 'none' }}>
                 {content}
             </a>
         );
     }
 
     return (
-        <button onClick={onClick} className={finalStyles}>
+        <button onClick={onClick} className={baseStyles}>
             {content}
         </button>
     );

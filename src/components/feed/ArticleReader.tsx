@@ -69,10 +69,23 @@ export function ArticleReader({ isOpen, onClose, title, lang = 'en' }: ArticleRe
                     <Loader2 className="animate-spin" size={40} />
                 </div>
             ) : htmlContent ? (
-                <article
-                    className="wiki-content prose prose-invert prose-lg max-w-3xl mx-auto"
-                    dangerouslySetInnerHTML={{ __html: htmlContent }}
-                />
+                <>
+                    <style>
+                        {`
+                            .wiki-content { color: #e2e8f0; }
+                            .wiki-content h1, .wiki-content h2, .wiki-content h3, .wiki-content h4, .wiki-content h5, .wiki-content h6 { color: #fff !important; }
+                            .wiki-content a { color: #60a5fa !important; }
+                            .wiki-content * { background-color: transparent !important; color: inherit; }
+                            .wiki-content table, .wiki-content th, .wiki-content td { border-color: rgba(255,255,255,0.2) !important; }
+                            .wiki-content .infobox { background: rgba(255,255,255,0.05) !important; border: 1px solid rgba(255,255,255,0.1) !important; padding: 1rem; border-radius: 0.5rem; }
+                            .wiki-content .thumbcaption { color: #94a3b8 !important; }
+                        `}
+                    </style>
+                    <article
+                        className="wiki-content prose prose-invert prose-lg max-w-3xl mx-auto"
+                        dangerouslySetInnerHTML={{ __html: htmlContent }}
+                    />
+                </>
             ) : (
                 <div className="h-full flex flex-col items-center justify-center text-white/50">
                     <p>Failed to load article.</p>

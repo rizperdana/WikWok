@@ -8,7 +8,7 @@ import { AdCard } from './AdCard';
 import { SearchOverlay } from './SearchOverlay';
 import { SearchResultsGrid } from './SearchResultsGrid';
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, ChevronDown, Check, Search, ArrowLeft } from 'lucide-react';
+import { Loader2, ChevronDown, Check, Search, ArrowLeft, House, Bell } from 'lucide-react';
 import { LANGUAGES } from '@/lib/constants/languages';
 import { WikiArticle, FeedItem } from '@/types';
 import { getTrendingTopics, TrendingTopic } from '@/lib/services/wikipedia';
@@ -24,6 +24,7 @@ export function Feed() {
   const [isRegionOpen, setIsRegionOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<FeedItem[] | null>(null);
+  const [regionSearch, setRegionSearch] = useState('');
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([]);
   const [readingArticle, setReadingArticle] = useState<WikiArticle | null>(null);
 
@@ -42,11 +43,12 @@ export function Feed() {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
+        // Trigger fetch when user is 3-4 screens away from bottom
         if (entries[0].isIntersecting && hasNextPage && !isFetching && !searchResults) {
           fetchNextPage();
         }
       },
-      { rootMargin: '400px', threshold: 0 }
+      { rootMargin: '2500px', threshold: 0 }
     );
 
     if (loadMoreRef.current) {
@@ -121,23 +123,43 @@ export function Feed() {
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 className="absolute top-full left-0 mt-4 w-64 bg-[#111111]/95 backdrop-blur-3xl border border-white/10 rounded-3xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] overflow-hidden z-[101]"
                             >
-                                <div className="p-3 max-h-[70vh] overflow-y-auto no-scrollbar">
-                                    {LANGUAGES.map((l) => (
-                                        <button
-                                            key={l.code}
-                                            onClick={() => {
-                                                setLang(l.code);
-                                                setIsRegionOpen(false);
-                                            }}
-                                            className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all mb-1 ${lang === l.code ? 'bg-cerulean-600 text-white shadow-lg shadow-cerulean-500/20' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <span className="text-xl leading-none">{l.flag}</span>
-                                                <span className="text-[11px] font-black uppercase tracking-widest">{l.name}</span>
+                                <div className="p-3">
+                                    <div className="mb-2 relative">
+                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+                                        <input
+                                            type="text"
+                                            placeholder="Search language..."
+                                            value={regionSearch}
+                                            onChange={(e) => setRegionSearch(e.target.value)}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-9 pr-3 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors"
+                                            autoFocus
+                                        />
+                                    </div>
+                                    <div className="max-h-[60vh] overflow-y-auto no-scrollbar">
+                                        {LANGUAGES.filter(l => l.name.toLowerCase().includes(regionSearch.toLowerCase()) || l.code.includes(regionSearch.toLowerCase())).map((l) => (
+                                            <button
+                                                key={l.code}
+                                                onClick={() => {
+                                                    setLang(l.code);
+                                                    setIsRegionOpen(false);
+                                                    setRegionSearch('');
+                                                }}
+                                                className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all mb-1 ${lang === l.code ? 'bg-cerulean-600 text-white shadow-lg shadow-cerulean-500/20' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <span className="text-xl leading-none">{l.flag}</span>
+                                                    <span className="text-[11px] font-black uppercase tracking-widest">{l.name}</span>
+                                                </div>
+                                                {lang === l.code && <Check size={14} className="stroke-[3px]" />}
+                                            </button>
+                                        ))}
+                                        {LANGUAGES.filter(l => l.name.toLowerCase().includes(regionSearch.toLowerCase()) || l.code.includes(regionSearch.toLowerCase())).length === 0 && (
+                                            <div className="py-4 text-center text-white/30 text-xs">
+                                                No languages found
                                             </div>
-                                            {lang === l.code && <Check size={14} className="stroke-[3px]" />}
-                                        </button>
-                                    ))}
+                                        )}
+                                    </div>
                                 </div>
                             </motion.div>
                         )}
@@ -147,12 +169,7 @@ export function Feed() {
 
             {/* Top Right Controls */}
             <div className="absolute top-4 right-4 lg:top-6 lg:right-6 flex items-center gap-3 lg:gap-4 pointer-events-auto">
-                <button
-                    onClick={() => setIsSearchOpen(true)}
-                    className="flex items-center justify-center w-9 h-9 lg:w-[50px] lg:h-[50px] rounded-full bg-black/60 backdrop-blur-2xl border border-white/20 text-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] hover:bg-white/20 transition-all active:scale-95 group focus:outline-none lg:hidden"
-                >
-                    <Search size={16} className="lg:w-[20px] lg:h-[20px]" />
-                </button>
+                {/* Mobile Search Removed as per request, moved to bottom nav */}
                 <AuthButton />
             </div>
         </div>
@@ -268,15 +285,14 @@ export function Feed() {
         {!searchResults && (
             <div
             ref={loadMoreRef}
-            className="h-32 w-full flex flex-col items-center justify-center snap-start bg-transparent text-white gap-2"
+            className="h-20 w-full flex flex-col items-center justify-center bg-transparent text-white gap-2 pointer-events-none"
             >
-            {isFetching && (
-                <>
-                    <div className="w-6 h-6 border-2 border-cerulean-500/20 border-t-cerulean-500 rounded-full animate-spin-custom"></div>
-                    <span className="text-xs text-white/50 font-medium tracking-widest uppercase">Fetching more...</span>
-                </>
+            {isFetching && feedItems.length > 0 && (
+                <div className="w-full flex flex-col items-center justify-center p-4 gap-2">
+                     <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                </div>
             )}
-            {!hasNextPage && feedItems.length > 0 && <span className="text-sm text-white/30 font-bold tracking-widest uppercase">The End</span>}
+            {!hasNextPage && feedItems.length > 0 && <span className="text-xs text-white/30 font-bold tracking-widest uppercase">The End</span>}
             </div>
         )}
       </main>
@@ -324,6 +340,35 @@ export function Feed() {
         title={readingArticle?.title || ''}
         lang={readingArticle?.lang}
       />
+
+      {/* Mobile Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 w-full z-50 bg-[#060606]/90 backdrop-blur-xl border-t border-white/10 flex justify-around items-center h-[70px] pb-4 md:hidden safe-area-bottom">
+          <button
+            onClick={() => {
+                if(searchResults) setSearchResults(null);
+                mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className={`flex flex-col items-center gap-1 p-2 ${!searchResults ? 'text-white' : 'text-white/40'}`}
+          >
+              <House size={24} className={!searchResults ? "fill-white" : ""} strokeWidth={!searchResults ? 0 : 2} />
+              <span className="text-[10px] font-medium">Home</span>
+          </button>
+
+          <button
+            onClick={() => setIsSearchOpen(true)}
+            className="flex flex-col items-center gap-1 p-2 text-white/40 active:text-white transition-colors"
+          >
+              <Search size={24} />
+              <span className="text-[10px] font-medium">Search</span>
+          </button>
+
+          <button
+             className="flex flex-col items-center gap-1 p-2 text-white/40 active:text-white transition-colors"
+          >
+              <Bell size={24} />
+              <span className="text-[10px] font-medium">Activity</span>
+          </button>
+      </div>
     </div>
   );
 }

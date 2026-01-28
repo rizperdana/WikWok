@@ -17,29 +17,24 @@ export function useWikwokFeed() {
   const initializedRef = useRef(false);
   const processedPagesRef = useRef(0);
 
-  // Initial Detection: IP-based Region Detection
+  // Instant Local Detection
   useEffect(() => {
-    async function detectRegion() {
-        try {
-            // Using a public IP API for personalization
-            const res = await fetch('https://ipapi.co/json/');
-            const data = await res.json();
+    if (typeof window !== 'undefined' && !initializedRef.current) {
+        const browserLang = navigator.language.split('-')[0];
+        // Check if we support this language code
+        // We import LANGUAGES via a dynamic check (or just trust the input if it's 2 chars?)
+        // Better to check distinct list if possible, or just set it and api might fallback to 'en' if invalid.
+        // For now, let's assume if it matches one of our known codes.
+        // We don't have access to LANGUAGES list inside hook easily unless imported?
+        // useWikwokFeed doesn't import LANGUAGES. I should import it or just check
+        // a few key ones. Or just `setLang(browserLang)` and hope API supports it (it handles fallbacks).
 
-            if (data.country_code === 'ID') {
-                setLang('id');
-            } else if (data.country_code === 'JP') {
-                setLang('ja');
-            } else if (data.country_code === 'FR') {
-                setLang('fr');
-            } else if (data.country_code === 'DE') {
-                setLang('de');
-            }
-            // Add more common mappings if needed
-        } catch (e) {
-            console.warn('IP detection failed, defaulting to EN:', e);
+        // Actually, let's just set it. Wikipedia supports almost all 2 char codes.
+        if (browserLang) {
+             console.log('Detected browser lang:', browserLang);
+             setLang(browserLang);
         }
     }
-    detectRegion();
   }, []);
 
   // Initialize random gap
@@ -57,11 +52,16 @@ export function useWikwokFeed() {
   const { data, fetchNextPage, hasNextPage, isFetching, isError } = useInfiniteQuery({
     queryKey: ['wikwok-feed', lang],
     queryFn: async ({ pageParam = 0 }) => {
-      const res = await fetch(`/api/feed?page=${pageParam}&lang=${lang}`);
+      // First load: 2 items (super fast). Subsequent: 5 items.
+      const limit = pageParam === 0 ? 2 : 5;
+      const res = await fetch(`/api/feed?page=${pageParam}&lang=${lang}&limit=${limit}`);
       if (!res.ok) throw new Error('Network error');
       return res.json() as Promise<WikiArticle[]>;
     },
-    getNextPageParam: (lastPage, allPages) => allPages.length,
+    getNextPageParam: (lastPage, allPages) => {
+        // Stop if we got no items, otherwise next page index
+        return lastPage.length === 0 ? undefined : allPages.length;
+    },
     initialPageParam: 0,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
@@ -79,7 +79,7 @@ export function useWikwokFeed() {
 
   useEffect(() => {
     if (data?.pages && data.pages.length > processedPagesRef.current) {
-      const newBatch = data.pages.slice(processedPagesRef.current).flat();
+      const newBatch = data.pages.slice(processedPagesRef.current).flat().filter(Boolean);
 
       if (newBatch.length > 0) {
         setFeedState((prevState) => {

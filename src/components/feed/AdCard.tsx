@@ -1,23 +1,22 @@
 import { motion } from 'framer-motion';
 import Script from 'next/script';
-import { memo, useState, useEffect } from 'react';
+import { memo, useState, useEffect, useRef } from 'react';
 import { ExternalLink } from 'lucide-react';
 
-const CAT_GIFS = [
-    "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbDVtcHg5aHVxc3p5Y3VqbWg2bTh0b3VocGJqZnF1anl3b3V5Y3VjciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/VbnUQpnihPSIgIXuZv/giphy.gif",
-    "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbWJ6dG51M3B0b3VocGJqZnF1anl3b3V5Y3VjciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Geimqs525qQ0/giphy.gif",
-    "https://media.giphy.com/media/MDJ9IbxxvDUQM/giphy.gif",
-    "https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif",
-    "https://media.giphy.com/media/mlvseq9yvZhba/giphy.gif"
-];
-
+// Using CATAAS (Cat as a Service) for dynamic reliable gifs
+// We will generate the URL with a random tag or param in the component
 const DONATION_MESSAGES = [
     "Servers run on electricity... and cat treats? 🐱",
     "Ad blocked? That's cool. Maybe buy us a coffee instead? ☕",
     "Help us keep the lights on (and the cats fed)!",
     "Oops! The ad vanished. Maybe it's a sign to donate? ✨",
     "No ads? No problem! Your support means the world to us.",
-    "Be the hero this app deserves! 🦸‍♂️"
+    "Be the hero this app deserves! 🦸‍♂️",
+    "Wiki knowledge is free, but hosting it isn't! 📉",
+    "Your contribution builds the future of discovery. 🚀",
+    "Feed the algorithm (and the developers). 🍔",
+    "One small donation, one giant leap for this app. 🌕",
+    "Support indie devs and get 1000 karma points! (Not guaranteed) 💎"
 ];
 
 export const AdCard = memo(function AdCard() {
@@ -27,19 +26,43 @@ export const AdCard = memo(function AdCard() {
   const [randomMsg, setRandomMsg] = useState("");
   const [hasScrolled, setHasScrolled] = useState(false); // To prevent flashing if ad loads slow
 
+  const adRef = useRef<HTMLModElement>(null);
+
   useEffect(() => {
-      setRandomGif(CAT_GIFS[Math.floor(Math.random() * CAT_GIFS.length)]);
+      // Use a random timestamp to defeat cache and get a new cat each time
+      setRandomGif(`https://cataas.com/cat/gif?type=small&t=${Date.now()}-${Math.random()}`);
       setRandomMsg(DONATION_MESSAGES[Math.floor(Math.random() * DONATION_MESSAGES.length)]);
 
-      // Simulate ad check - in reality, if no PID or if ad script fails (detected via listeners usually, but robustly by timeout if empty height)
-      // For now, if no PID, we show donation immediately.
       if (!pId) {
           setAdError(true);
+          return;
       }
 
-      // Safety timeout: if ad logic was complex, we'd wait.
-      // Since we just check pId for now to toggle:
-      // If we had a pId, we'd try to load. If it fails (onError on Script maybe?), show fallback.
+      // Check for unfilled ads or zero height
+      const interval = setInterval(() => {
+          if (adRef.current) {
+              const status = adRef.current.getAttribute('data-ad-status');
+              // Google AdSense sets data-ad-status="unfilled" if no ad is returned
+              if (status === 'unfilled') {
+                  setAdError(true);
+                  clearInterval(interval);
+              }
+              // Also check if enough time passed and height is still 0 (blocked or failed silent)
+              // We'll give it 3 seconds to get some height
+          }
+      }, 1000);
+
+      const timeout = setTimeout(() => {
+          if (adRef.current && adRef.current.offsetHeight === 0 && !adRef.current.innerHTML.trim()) {
+             setAdError(true);
+          }
+          clearInterval(interval);
+      }, 5000);
+
+      return () => {
+          clearInterval(interval);
+          clearTimeout(timeout);
+      };
   }, [pId]);
 
   return (
@@ -56,6 +79,7 @@ export const AdCard = memo(function AdCard() {
             {!adError && pId ? (
                 <div className="w-full min-h-[300px] bg-black/40 rounded-2xl flex items-center justify-center overflow-hidden">
                     <ins className="adsbygoogle"
+                        ref={adRef}
                         style={{ display: 'block', width: '100%' }}
                         data-ad-client={`ca-pub-${pId.replace('pub-', '')}`}
                         data-ad-slot="1234567890"

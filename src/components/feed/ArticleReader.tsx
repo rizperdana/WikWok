@@ -49,14 +49,14 @@ export function ArticleReader({ isOpen, onClose, title, lang = 'en' }: ArticleRe
           animate={{ y: '0%' }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="fixed inset-0 z-[2000] bg-oxford-navy-100 flex flex-col overflow-hidden"
+          className="fixed inset-0 z-[2000] bg-white flex flex-col overflow-hidden"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-white/10 bg-oxford-navy-200/80 backdrop-blur-md sticky top-0 z-10">
-             <h2 className="text-white font-bold truncate pr-4 text-lg">{title}</h2>
+          <div className="flex items-center justify-between p-4 border-b border-black/5 bg-white/80 backdrop-blur-md sticky top-0 z-10">
+             <h2 className="text-black font-bold truncate pr-4 text-lg">{title}</h2>
              <button
                onClick={onClose}
-               className="p-2 bg-white/10 rounded-full hover:bg-white/20 text-white transition-colors"
+               className="p-2 bg-black/5 rounded-full hover:bg-black/10 text-black transition-colors"
              >
                <X size={20} />
              </button>
@@ -72,17 +72,17 @@ export function ArticleReader({ isOpen, onClose, title, lang = 'en' }: ArticleRe
                 <>
                     <style>
                         {`
-                            .wiki-content { color: #e2e8f0; }
-                            .wiki-content h1, .wiki-content h2, .wiki-content h3, .wiki-content h4, .wiki-content h5, .wiki-content h6 { color: #fff !important; }
-                            .wiki-content a { color: #60a5fa !important; }
+                            .wiki-content { color: #1e293b; }
+                            .wiki-content h1, .wiki-content h2, .wiki-content h3, .wiki-content h4, .wiki-content h5, .wiki-content h6 { color: #000 !important; }
+                            .wiki-content a { color: #2563eb !important; }
                             .wiki-content * { background-color: transparent !important; color: inherit; }
-                            .wiki-content table, .wiki-content th, .wiki-content td { border-color: rgba(255,255,255,0.2) !important; }
-                            .wiki-content .infobox { background: rgba(255,255,255,0.05) !important; border: 1px solid rgba(255,255,255,0.1) !important; padding: 1rem; border-radius: 0.5rem; }
-                            .wiki-content .thumbcaption { color: #94a3b8 !important; }
+                            .wiki-content table, .wiki-content th, .wiki-content td { border-color: rgba(0,0,0,0.1) !important; }
+                            .wiki-content .infobox { background: rgba(0,0,0,0.02) !important; border: 1px solid rgba(0,0,0,0.05) !important; padding: 1rem; border-radius: 0.5rem; }
+                            .wiki-content .thumbcaption { color: #64748b !important; }
                         `}
                     </style>
                     <article
-                        className="wiki-content prose prose-invert prose-lg max-w-3xl mx-auto"
+                        className="wiki-content prose prose-lg max-w-3xl mx-auto"
                         dangerouslySetInnerHTML={{ __html: htmlContent }}
                     />
                 </>

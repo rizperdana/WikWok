@@ -5,7 +5,7 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { GoogleAdSense } from "@/components/GoogleAdSense";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], display: 'swap' });
 
 export const metadata: Metadata = {
   title: "Wikwok - Discover Knowledge",

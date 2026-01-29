@@ -3,19 +3,31 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWikwokFeed } from '@/lib/hooks/useWikwokFeed';
 import { AuthButton } from '@/components/auth/AuthButton';
-import { WikiCard } from './WikiCard';
-import { AdCard } from './AdCard';
-import { SearchOverlay } from './SearchOverlay';
-import { SearchResultsGrid } from './SearchResultsGrid';
+import { getTrendingTopics, TrendingTopic } from '@/lib/services/wikipedia';
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, ChevronDown, Check, Search, ArrowLeft, House, Bell } from 'lucide-react';
 import { LANGUAGES } from '@/lib/constants/languages';
 import { WikiArticle, FeedItem } from '@/types';
-import { getTrendingTopics, TrendingTopic } from '@/lib/services/wikipedia';
-import { ArticleReader } from './ArticleReader';
+import dynamic from 'next/dynamic';
 
-export function Feed() {
-  const { items: feedItems, lang, setLang, fetchNextPage, hasNextPage, isFetching } = useWikwokFeed();
+const WikiCard = dynamic(() => import('./WikiCard').then(mod => mod.WikiCard), {
+    loading: () => <div className="h-[100dvh] w-full bg-[#060606] animate-pulse" />
+});
+const AdCard = dynamic(() => import('./AdCard').then(mod => mod.AdCard));
+const SearchOverlay = dynamic(() => import('./SearchOverlay').then(mod => mod.SearchOverlay), { ssr: false });
+const SearchResultsGrid = dynamic(() => import('./SearchResultsGrid').then(mod => mod.SearchResultsGrid));
+const ArticleReader = dynamic(() => import('./ArticleReader').then(mod => mod.ArticleReader), { ssr: false });
+const ProfileOverlay = dynamic(() => import('./ProfileOverlay').then(mod => mod.ProfileOverlay), { ssr: false });
+
+
+
+interface FeedProps {
+  initialArticles?: WikiArticle[];
+}
+
+export function Feed({ initialArticles = [] }: FeedProps) {
+  const { items: feedItems, lang, setLang, fetchNextPage, hasNextPage, isFetching } = useWikwokFeed(initialArticles);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
 
@@ -227,8 +239,7 @@ export function Feed() {
               <SidebarItem label="Home" active={!searchResults} onClick={() => setSearchResults(null)} />
               <SidebarItem label="Explore" active={!!searchResults} onClick={() => setIsSearchOpen(true)} />
               <SidebarItem label="Notifications" />
-              <SidebarItem label="Messages" />
-              <SidebarItem label="Profile" />
+              <SidebarItem label="Profile" onClick={() => setIsProfileOpen(true)} />
           </nav>
 
           <div className="mt-auto pt-6">
@@ -339,6 +350,12 @@ export function Feed() {
         onClose={() => setReadingArticle(null)}
         title={readingArticle?.title || ''}
         lang={readingArticle?.lang}
+      />
+
+      <ProfileOverlay
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        onReadArticle={setReadingArticle}
       />
 
       {/* Mobile Bottom Navigation */}

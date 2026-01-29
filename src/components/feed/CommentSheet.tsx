@@ -27,9 +27,11 @@ interface CommentSheetProps {
   isOpen: boolean;
   onClose: () => void;
   articleUrl: string;
+  articleTitle?: string;
+  articleImage?: string;
 }
 
-export function CommentSheet({ isOpen, onClose, articleUrl }: CommentSheetProps) {
+export function CommentSheet({ isOpen, onClose, articleUrl, articleTitle, articleImage }: CommentSheetProps) {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -116,12 +118,31 @@ export function CommentSheet({ isOpen, onClose, articleUrl }: CommentSheetProps)
 
     setSubmitting(true);
     try {
+        // Send to API route to handle secure insert (or keep using client for now if RLS allows?)
+        // The original code used direct supabase.from('comments').insert().
+        // Does 'comments' table allow insert with 'article_title' which is not in RLS?
+        // Actually earlier 'route.ts' (comments) POST handler was shown.
+        // Wait, the client code existing used `supabase.from('comments').insert(...)`.
+        // BUT there is a route `src/app/api/comments/route.ts` which handles POST too?
+        // Line 127 in existing CommentSheet used `supabase.from('comments').insert`.
+        // I should probably switch to using the API route I just modified OR update the client call if I want to stay client-side.
+        // Usually safer to use API for complex metadata if we want server validation, but client is faster.
+        // However, I updated the API route to handle metadata. I should use it.
+        // BUT refactoring to use `fetch('/api/comments', ...)` implies changing this logic.
+        // AND the user context (auth) might be handled via session token.
+        // The existing code uses `supabase` client directly.
+        // If RLS allows direct insert, I can just add fields here.
+        // I added columns to the table.
+        // Let's try adding fields here first. If RLS blocks, I'll switch to API.
+
       const payload = {
           user_id: user.id,
           article_url: articleUrl,
           content: newComment.trim(),
           parent_id: replyingTo?.id || null,
-          depth: replyingTo ? (replyingTo.depth || 0) + 1 : 0
+          depth: replyingTo ? (replyingTo.depth || 0) + 1 : 0,
+          article_title: articleTitle,
+          article_image: articleImage
       };
 
       const { error } = await supabase

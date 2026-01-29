@@ -4,8 +4,14 @@ import { Heart, MessageCircle, Volume2, VolumeX, Sparkles, Bookmark, Share2, Ext
 import { memo, useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthContext';
 import { supabase } from '@/lib/supabase/client';
-import { CommentSheet } from './CommentSheet';
 import { prefetchWikiPageHtml } from '@/lib/services/wikipedia';
+import Image from 'next/image';
+import dynamic from 'next/dynamic';
+import { getWikimediaImageUrl } from '@/lib/utils/images';
+
+const CommentSheet = dynamic(() => import('./CommentSheet').then(mod => mod.CommentSheet), {
+    ssr: false
+});
 
 interface WikiCardProps {
   article: WikiArticle;
@@ -16,8 +22,7 @@ interface WikiCardProps {
 
 export const WikiCard = memo(function WikiCard({ article, priority = false, onInView, onRead }: WikiCardProps) {
   const { user, session } = useAuth();
-  const bgImage = article.originalimage?.source;
-  const [isTldr, setIsTldr] = useState(false);
+  const bgImage = article.originalimage?.source ? getWikimediaImageUrl(article.originalimage.source, 800) : null;
   // Interaction States
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
@@ -83,7 +88,9 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
             },
             body: JSON.stringify({
                 type: 'like',
-                article_url: article.content_urls.mobile.page
+                article_url: article.content_urls.mobile.page,
+                article_title: article.title,
+                article_image: article.originalimage?.source || ""
             })
         });
     } catch (e) {
@@ -160,7 +167,7 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
       {/* Background Image Layer */}
       <div className="absolute inset-0 z-0 h-full w-full bg-[#1a1a1a]">
         {bgImage && (
-            <motion.img
+            <motion.div
                 initial={{ scale: 1.1, opacity: 0, filter: 'blur(10px)' }}
                 animate={{
                     scale: 1,
@@ -168,13 +175,19 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
                     filter: 'blur(0px)'
                 }}
                 transition={{ duration: 0.7, ease: "easeOut" }}
-                src={bgImage}
-                alt={article.title}
-                className="h-full w-full object-cover"
-                loading={priority ? "eager" : "lazy"}
-                // @ts-ignore
-                fetchPriority={priority ? "high" : "auto"}
-            />
+                className="absolute inset-0 h-full w-full"
+            >
+                <Image
+                    src={bgImage}
+                    alt={article.title}
+                    fill
+                    className="object-cover"
+                    priority={priority}
+                    quality={75}
+                    sizes="100vw"
+                    unoptimized={true}
+                />
+            </motion.div>
         )}
 
         {/* TikTok-style bottom shading gradient */}
@@ -198,80 +211,38 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
             </motion.div>
 
             {/* Extract / Summary */}
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key={isTldr ? 'tldr' : 'full'}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="prose prose-invert prose-sm md:prose-base leading-snug text-white/90 drop-shadow-md font-medium"
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="prose prose-invert prose-sm md:prose-base leading-snug text-white/90 drop-shadow-md font-medium"
+            >
+                 <div
+                    className="relative cursor-pointer group"
+                    onClick={() => onRead?.(article)}
                 >
-                    {isTldr ? (
-                       <div className="bg-black/60 backdrop-blur-xl p-6 rounded-t-3xl border border-white/10 h-[85vh] overflow-y-auto no-scrollbar shadow-2xl absolute bottom-0 left-0 right-0 z-50">
-                            <div className="flex items-center gap-2 text-blue-400 mb-6 sticky top-0 bg-black/50 backdrop-blur-md p-2 -mx-2 -mt-2 rounded-t-xl z-20">
-                                <Sparkles size={20} className="animate-pulse" />
-                                <span className="text-xs font-black uppercase tracking-[0.2em]">AI Summary</span>
-                            </div>
-
-                            <div className="space-y-8">
-                                <section>
-                                    <h4 className="text-xs font-black uppercase tracking-widest text-white/50 mb-3">Executive Summary</h4>
-                                    <p className="text-white text-lg md:text-xl font-bold leading-relaxed">
-                                        {article.extract.split('.').slice(0, 1).join('.')}.
-                                    </p>
-                                </section>
-
-                                <section>
-                                    <h4 className="text-xs font-black uppercase tracking-widest text-white/50 mb-3">Key Insights</h4>
-                                    <ul className="space-y-4">
-                                        <li className="flex gap-4 text-base md:text-lg text-white/90 leading-relaxed">
-                                            <span className="w-2 h-2 rounded-full bg-blue-500 mt-2.5 shrink-0 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
-                                            <span>{article.extract.split('.').slice(1, 2).join('.') || "Highlights critical evolution in the subject matter."}.</span>
-                                        </li>
-                                        <li className="flex gap-4 text-base md:text-lg text-white/90 leading-relaxed">
-                                            <span className="w-2 h-2 rounded-full bg-blue-500 mt-2.5 shrink-0 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
-                                            <span>Significance verified by global knowledge graph data.</span>
-                                        </li>
-                                    </ul>
-                                </section>
-
-                                <button
-                                    onClick={() => onRead?.(article)}
-                                    className="w-full py-4 mt-4 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 font-bold text-sm uppercase tracking-widest rounded-xl transition-all border border-blue-500/30 flex items-center justify-center gap-2"
-                                >
-                                    Read Full Analysis &rarr;
-                                </button>
-                            </div>
-                       </div>
-                    ) : (
-                        <div
-                            className="relative cursor-pointer group"
-                            onClick={() => onRead?.(article)}
+                    <div className="max-h-[35dvh] overflow-hidden">
+                        <span className="line-clamp-[8] md:line-clamp-[12] block text-white/90 group-hover:text-white transition-colors">
+                            {article.extract.length > 800
+                                ? `${article.extract.slice(0, 800)}...`
+                                : article.extract}
+                        </span>
+                    </div>
+                    <div className="mt-4">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onRead?.(article);
+                            }}
+                            className="inline-flex items-center gap-2 !text-white !font-black hover:opacity-80 transition-opacity uppercase text-xs tracking-widest drop-shadow-lg"
                         >
-                            <div className="max-h-[35dvh] overflow-hidden">
-                                <span className="line-clamp-[8] md:line-clamp-[12] block text-white/90 group-hover:text-white transition-colors">
-                                    {article.extract.length > 800
-                                        ? `${article.extract.slice(0, 800)}...`
-                                        : article.extract}
-                                </span>
-                            </div>
-                            <div className="mt-4">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onRead?.(article);
-                                    }}
-                                    className="inline-flex items-center gap-2 !text-white !font-black hover:opacity-80 transition-opacity uppercase text-xs tracking-widest drop-shadow-lg"
-                                >
-                                    Read Article
-                                    <ExternalLink size={16} className="stroke-[3px]" />
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </motion.div>
-            </AnimatePresence>
+                            Read Article
+                            <ExternalLink size={16} className="stroke-[3px]" />
+                        </button>
+                    </div>
+                </div>
+            </motion.div>
         </div>
 
         {/* Right Side: Action Bar (TikTok Style) */}
@@ -291,12 +262,7 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
                 label={counts.comments > 0 ? `${counts.comments}` : "Comment"}
             />
 
-            <ActionButton
-                onClick={() => setIsTldr(!isTldr)}
-                icon={<Sparkles size={26} className={isTldr ? "text-blue-400 fill-blue-400/20" : "text-white"} />}
-                label="AI"
-                active={isTldr}
-            />
+
 
             <ActionButton
                 onClick={handleBookmark}
@@ -319,6 +285,8 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
         isOpen={isCommentsOpen}
         onClose={() => setIsCommentsOpen(false)}
         articleUrl={article.content_urls.mobile.page}
+        articleTitle={article.title}
+        articleImage={article.originalimage?.source}
       />
 
     </motion.div>

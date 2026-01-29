@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -86,20 +87,27 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     const body = await request.json();
-    const { type, article_url, payload } = body;
+    const { type, article_url, payload, article_title, article_image } = body;
 
     // Auth check for most actions, but allow anonymous 'share' logging if desired?
     // User requested "persist", so we probably want valid tracking.
     // Let's allow anonymous shares but require auth for rest.
 
     const authHeader = request.headers.get('Authorization');
-    const supabase = createServerClient();
+    let supabase;
     let user = null;
 
     if (authHeader) {
+        supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            { global: { headers: { Authorization: authHeader } } }
+        );
         const token = authHeader.replace('Bearer ', '');
         const { data } = await supabase.auth.getUser(token);
         user = data.user;
+    } else {
+        supabase = createServerClient();
     }
 
     if (!user && type !== 'share') {
@@ -144,8 +152,12 @@ export async function POST(request: Request) {
     } else {
         // Add
         let insertData = { ...matchQuery };
+        // For likes and bookmarks, include metadata
         if (type === 'bookmark' && payload) {
             insertData = { ...insertData, ...payload };
+        } else if (type === 'like') {
+             if (article_title) insertData.article_title = article_title;
+             if (article_image) insertData.article_image = article_image;
         }
         await supabase.from(table).insert(insertData);
         return NextResponse.json({ active: true });

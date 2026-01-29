@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -68,13 +69,20 @@ export async function GET(request: Request) {
     return NextResponse.json(thread);
 }
 
+
+
 export async function POST(request: Request) {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = createServerClient();
+    const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { global: { headers: { Authorization: authHeader } } }
+    );
+
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
@@ -83,7 +91,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { article_url, content, parent_id, depth } = body;
+    const { article_url, content, parent_id, depth, article_title, article_image } = body;
 
     // Validate
     if (!article_url || !content) {
@@ -97,7 +105,9 @@ export async function POST(request: Request) {
             article_url,
             content,
             parent_id,
-            depth
+            depth,
+            article_title,
+            article_image
         });
 
     if (error) {

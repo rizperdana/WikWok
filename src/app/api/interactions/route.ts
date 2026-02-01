@@ -4,10 +4,63 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type'); // 'like' or 'bookmark'
+    const type = searchParams.get('type'); // 'like' or 'bookmark' or 'stats'
     const articleUrl = searchParams.get('url');
+    const urlsParam = searchParams.get('urls'); // Comma-separated list for batch requests
 
-    if (!type || !articleUrl) {
+    // Handle batch stats request
+    if (type === 'stats' && urlsParam) {
+        const urls = urlsParam.split(',').map(u => decodeURIComponent(u.trim())).filter(Boolean);
+        if (urls.length === 0) {
+            return NextResponse.json({ error: 'Missing urls' }, { status: 400 });
+        }
+
+        const authHeader = request.headers.get('Authorization');
+        const supabase = createServerClient();
+        let user = null;
+
+        if (authHeader) {
+            const token = authHeader.replace('Bearer ', '');
+            const { data } = await supabase.auth.getUser(token);
+            user = data.user;
+        }
+
+        // Fetch stats for all URLs in parallel
+        const results = await Promise.all(urls.map(async (url) => {
+            const [likes, bookmarks, comments, shares] = await Promise.all([
+                supabase.from('likes').select('*', { count: 'exact', head: true }).eq('article_url', url),
+                supabase.from('bookmarks').select('*', { count: 'exact', head: true }).eq('article_url', url),
+                supabase.from('comments').select('*', { count: 'exact', head: true }).eq('article_url', url),
+                supabase.from('shares').select('*', { count: 'exact', head: true }).eq('article_url', url)
+            ]);
+
+            let userStatus = { liked: false, bookmarked: false };
+            if (user) {
+                const [likeStatus, bookmarkStatus] = await Promise.all([
+                    supabase.from('likes').select('id').eq('user_id', user.id).eq('article_url', url).single(),
+                    supabase.from('bookmarks').select('id').eq('user_id', user.id).eq('article_url', url).single()
+                ]);
+                userStatus.liked = !!likeStatus.data;
+                userStatus.bookmarked = !!bookmarkStatus.data;
+            }
+
+            return {
+                url,
+                counts: {
+                    likes: likes.count || 0,
+                    bookmarks: bookmarks.count || 0,
+                    comments: comments.count || 0,
+                    shares: shares.count || 0
+                },
+                userStatus
+            };
+        }));
+
+        return NextResponse.json({ batchResults: results });
+    }
+
+    // Single URL request (existing logic)
+    if (!articleUrl) {
         return NextResponse.json({ error: 'Missing params' }, { status: 400 });
     }
 

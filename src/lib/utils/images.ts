@@ -66,3 +66,20 @@ export function getWikimediaImageUrl(url: string, width: number = 800): string {
     return url;
   }
 }
+
+// Preload image by creating a link element
+export function preloadImage(src: string): void {
+  if (!src || typeof document === 'undefined') return;
+
+  const link = document.createElement('link');
+  link.rel = 'preload';
+  link.as = 'image';
+  link.href = src;
+  document.head.appendChild(link);
+}
+
+// Generate a tiny blurred placeholder (returns null if no URL)
+export function getThumbnailUrl(url: string, width: number = 50): string | null {
+  if (!url) return null;
+  return getWikimediaImageUrl(url, width);
+}

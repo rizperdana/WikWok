@@ -61,8 +61,8 @@ export function useWikwokFeed(initialArticles: WikiArticle[] = []) {
   const { data, fetchNextPage, hasNextPage, isFetching, isError } = useInfiniteQuery({
     queryKey: ['wikwok-feed', lang],
     queryFn: async ({ pageParam = 0 }) => {
-      // First load: 2 items (super fast). Subsequent: 5 items.
-      const limit = pageParam === 0 ? 2 : 5;
+      // Initial load: 6 items (fast start). Subsequent: 8 items (larger batches)
+      const limit = pageParam === 0 ? 6 : 8;
       const res = await fetch(`/api/feed?page=${pageParam}&lang=${lang}&limit=${limit}`);
       if (!res.ok) throw new Error('Network error');
       return res.json() as Promise<WikiArticle[]>;

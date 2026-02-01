@@ -30,7 +30,6 @@ export const LANGUAGES = [
   { code: 'uk', name: 'Ukrainian', flag: '🇺🇦' },
   { code: 'hu', name: 'Hungarian', flag: '🇭🇺' },
   { code: 'ro', name: 'Romanian', flag: '🇷🇴' },
-  { code: 'ms', name: 'Malay', flag: '🇲🇾' },
   { code: 'tl', name: 'Tagalog', flag: '🇵🇭' },
   { code: 'sr', name: 'Serbian', flag: '🇷🇸' },
   { code: 'hr', name: 'Croatian', flag: '🇭🇷' },
@@ -48,7 +47,6 @@ export const LANGUAGES = [
   { code: 'bug', name: 'Buginese', flag: '⛵' },
   { code: 'mad', name: 'Madurese', flag: '🐂' },
   { code: 'gor', name: 'Gorontalo', flag: '🌽' },
-  { code: 'ms', name: 'Malay', flag: '🇲🇾' }, // Already exists? check
 ];
 
 export const DEFAULT_LANG = 'en';

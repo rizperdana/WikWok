@@ -45,37 +45,39 @@ export async function fetchRandomArticle(lang: string): Promise<WikiArticle | nu
   }
 }
 
-export async function getFeedArticles(lang: string = 'en', count: number = 5): Promise<WikiArticle[]> {
-  const TARGET_COUNT = Math.min(count, 20); // Cap at 20
+export async function getFeedArticles(lang: string = 'en', count: number = 8): Promise<WikiArticle[]> {
+  const TARGET_COUNT = Math.min(count, 24); // Cap at 24 for larger batches
 
   console.log(`[Lib] Fetching feed for lang: ${lang}, target: ${TARGET_COUNT}`);
 
   const validArticles: WikiArticle[] = [];
-  const MAX_ATTEMPTS = TARGET_COUNT * 4;
+  const MAX_ATTEMPTS = TARGET_COUNT * 3; // Reduced attempts since we need quality
 
   let attempts = 0;
   const seenTitles = new Set<string>();
 
   while (validArticles.length < TARGET_COUNT && attempts < MAX_ATTEMPTS) {
     const remaining = TARGET_COUNT - validArticles.length;
-    const batchSize = Math.min(Math.max(remaining, 3), 5);
+    const batchSize = Math.min(Math.max(remaining, 4), 8); // Larger batches
 
     const promises = Array(batchSize).fill(null).map(() => fetchRandomArticle(lang));
-    const results = await Promise.all(promises);
+    const results = await Promise.allSettled(promises); // Use Promise.allSettled to not fail fast
 
-    for (const article of results) {
-        if (article) {
-             if (!seenTitles.has(article.title)) {
-                seenTitles.add(article.title);
-                validArticles.push(article);
-            }
+    for (const result of results) {
+      if (result.status === 'fulfilled' && result.value) {
+        const article = result.value;
+        if (!seenTitles.has(article.title)) {
+          seenTitles.add(article.title);
+          validArticles.push(article);
         }
+      }
     }
 
-    // Aggressive speed optimization: For initial load (limit <= 2),
-    // if we have AT LEAST 1 article, return immediately to unblock user.
-    if (count <= 2 && validArticles.length >= 1) {
-        break;
+    // Aggressive speed optimization: For initial load (limit <= 6),
+    // if we have AT LEAST 3 articles, return immediately to unblock user.
+    if (count <= 6 && validArticles.length >= 3) {
+      console.log(`[Lib] Early exit: got ${validArticles.length}/${count} articles`);
+      break;
     }
 
     attempts += batchSize;

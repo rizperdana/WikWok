@@ -52,24 +52,6 @@ export function Feed({ initialArticles = [] }: FeedProps) {
     }
   }, [searchResults]);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        // Trigger fetch when user is 3-4 screens away from bottom
-        if (entries[0].isIntersecting && hasNextPage && !isFetching && !searchResults) {
-          fetchNextPage();
-        }
-      },
-      { rootMargin: '2500px', threshold: 0 }
-    );
-
-    if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetching, fetchNextPage, searchResults]);
-
   if (feedItems.length === 0 && isFetching && !searchResults) {
       return (
           <div className="h-screen w-full flex flex-col items-center justify-center bg-[#060606] text-white gap-6">
@@ -84,6 +66,38 @@ export function Feed({ initialArticles = [] }: FeedProps) {
 
   const currentLang = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
   const displayItems = searchResults || feedItems;
+
+  // Prefetch observer - placed after displayItems is defined
+  useEffect(() => {
+    let fetchInFlight = false;
+    let prefetchCooldown = false;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !searchResults && !prefetchCooldown) {
+          // If we have few items remaining, prefetch aggressively
+          const needsPrefetch = !hasNextPage || feedItems.length <= 6;
+
+          if (needsPrefetch && !fetchInFlight) {
+            fetchInFlight = true;
+
+            fetchNextPage().finally(() => {
+              fetchInFlight = false;
+              prefetchCooldown = true;
+              setTimeout(() => { prefetchCooldown = false; }, 500);
+            });
+          }
+        }
+      },
+      { rootMargin: '150%', threshold: 0 }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasNextPage, fetchNextPage, searchResults, feedItems]);
 
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[#060606] flex justify-center">
@@ -272,17 +286,22 @@ export function Feed({ initialArticles = [] }: FeedProps) {
       >
         {displayItems.length > 0 ? (
             displayItems.map((item, index) => (
-            <div key={`${lang}-${item.id}`} id={searchResults ? `card-${index}` : undefined} className="h-[100dvh] w-full snap-start">
-                 {item.type === 'article' ? (
+            <div
+                key={`${lang}-${item.id}`}
+                id={searchResults ? `card-${index}` : undefined}
+                data-card-index={index}
+                className="h-[100dvh] w-full snap-start"
+            >
+                  {item.type === 'article' ? (
                     <WikiCard
                       article={item.data}
                       priority={index < 2}
                       onInView={setActiveBg}
                       onRead={setReadingArticle}
                     />
-                 ) : (
+                  ) : (
                     <AdCard />
-                 )}
+                  )}
             </div>
           ))
         ) : (

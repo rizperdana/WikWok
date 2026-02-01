@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase/client';
 import { prefetchWikiPageHtml } from '@/lib/services/wikipedia';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
-import { getWikimediaImageUrl } from '@/lib/utils/images';
+import { getWikimediaImageUrl, getThumbnailUrl, preloadImage } from '@/lib/utils/images';
 
 const CommentSheet = dynamic(() => import('./CommentSheet').then(mod => mod.CommentSheet), {
     ssr: false
@@ -23,9 +23,12 @@ interface WikiCardProps {
 export const WikiCard = memo(function WikiCard({ article, priority = false, onInView, onRead }: WikiCardProps) {
   const { user, session } = useAuth();
   const bgImage = article.originalimage?.source ? getWikimediaImageUrl(article.originalimage.source, 800) : null;
+  const thumbnailUrl = article.originalimage?.source ? getThumbnailUrl(article.originalimage.source, 50) : null;
+
   // Interaction States
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   // Counts
   const [counts, setCounts] = useState({
@@ -38,12 +41,44 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Prefetch Article HTML
+  // Prefetch Article HTML and preload image
   useEffect(() => {
     if (priority) {
         prefetchWikiPageHtml(article.title, article.lang);
     }
-  }, [priority, article.title, article.lang]);
+    // Preload image for priority cards
+    if (priority && bgImage) {
+        preloadImage(bgImage);
+    }
+  }, [priority, article.title, article.lang, bgImage]);
+
+  // Preload upcoming images when card comes into view
+  useEffect(() => {
+    if (!cardRef.current || !bgImage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !priority) {
+          // Preload this card's image
+          preloadImage(bgImage);
+          // Also preload next card's image if available
+          const cardElements = document.querySelectorAll('[data-card-image]');
+          const currentIndex = Array.from(cardElements).findIndex(el => el === cardRef.current);
+          if (currentIndex >= 0 && cardElements[currentIndex + 1]) {
+            const nextImageUrl = (cardElements[currentIndex + 1] as HTMLElement).dataset.imageUrl;
+            if (nextImageUrl) preloadImage(nextImageUrl);
+          }
+        }
+      },
+      { rootMargin: '50%', threshold: 0 }
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [bgImage, priority]);
 
   // Fetch Public Stats & User Status
   useEffect(() => {
@@ -160,32 +195,36 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
   return (
     <motion.div
         ref={cardRef}
+        data-card-image={bgImage}
         onViewportEnter={() => onInView?.(bgImage || null)}
         className="relative h-[100dvh] w-full snap-start overflow-hidden bg-black text-white"
     >
       {/* Background Image Layer */}
-      {/* Background Image Layer */}
       <div className="absolute inset-0 z-0 h-full w-full bg-[#1a1a1a]">
         {bgImage && (
             <motion.div
-                initial={{ scale: 1.1, opacity: 0, filter: 'blur(10px)' }}
+                initial={{ scale: 1.1, opacity: 0 }}
                 animate={{
                     scale: 1,
-                    opacity: 0.6,
-                    filter: 'blur(0px)'
+                    opacity: imageLoaded ? 0.6 : 0.3
                 }}
-                transition={{ duration: 0.7, ease: "easeOut" }}
+                transition={{ duration: 0.5 }}
                 className="absolute inset-0 h-full w-full"
             >
+                {/* Blur placeholder while loading */}
+                {!imageLoaded && (
+                    <div className="absolute inset-0 bg-cover bg-center blur-xl scale-110" style={{ backgroundImage: `url(${thumbnailUrl || bgImage})` }} />
+                )}
                 <Image
                     src={bgImage}
                     alt={article.title}
                     fill
-                    className="object-cover"
+                    className={`object-cover transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                     priority={priority}
                     quality={75}
                     sizes="100vw"
                     unoptimized={true}
+                    onLoad={() => setImageLoaded(true)}
                 />
             </motion.div>
         )}

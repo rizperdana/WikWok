@@ -58,19 +58,23 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !priority) {
-          // Preload this card's image
+        if (entries[0].isIntersecting) {
+          // Preload this card's image immediately
           preloadImage(bgImage);
-          // Also preload next card's image if available
-          const cardElements = document.querySelectorAll('[data-card-image]');
-          const currentIndex = Array.from(cardElements).findIndex(el => el === cardRef.current);
-          if (currentIndex >= 0 && cardElements[currentIndex + 1]) {
-            const nextImageUrl = (cardElements[currentIndex + 1] as HTMLElement).dataset.imageUrl;
-            if (nextImageUrl) preloadImage(nextImageUrl);
-          }
+          
+          // Aggressively find and preload the next 2 cards
+          const allCards = Array.from(document.querySelectorAll('[data-card-image]'));
+          const currentIndex = allCards.findIndex(el => el === cardRef.current);
+          
+          [1, 2].forEach(offset => {
+            const nextCard = allCards[currentIndex + offset] as HTMLElement;
+            if (nextCard?.dataset.cardImage) {
+              preloadImage(nextCard.dataset.cardImage);
+            }
+          });
         }
       },
-      { rootMargin: '50%', threshold: 0 }
+      { rootMargin: '100%', threshold: 0.1 }
     );
 
     if (cardRef.current) {
@@ -221,7 +225,7 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
                     fill
                     className={`object-cover transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                     priority={priority}
-                    quality={75}
+                    quality={60}
                     sizes="100vw"
                     unoptimized={true}
                     onLoad={() => setImageLoaded(true)}
@@ -247,6 +251,38 @@ export const WikiCard = memo(function WikiCard({ article, priority = false, onIn
                 <h1 className="text-2xl md:text-4xl font-black leading-tight text-white drop-shadow-lg text-balance tracking-tighter line-clamp-3">
                     {article.title}
                 </h1>
+            </motion.div>
+
+            {/* Wikipedia Attribution */}
+            <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+                className="flex flex-col gap-1.5 mt-2"
+            >
+                <div className="flex items-center gap-2 text-white/60 text-xs">
+                    <span className="font-medium">Source:</span>
+                    <a
+                        href={`https://${article.lang || 'en'}.wikipedia.org/wiki/${encodeURIComponent(article.title.replace(/ /g, '_'))}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-white/80 hover:text-white transition-colors underline decoration-1 underline-offset-2 font-medium"
+                    >
+                        Wikipedia
+                    </a>
+                </div>
+                <div className="text-white/50 text-xs leading-tight">
+                    Licensed under{' '}
+                    <a
+                        href="https://creativecommons.org/licenses/by-sa/3.0/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-white/60 hover:text-white/70 transition-colors underline decoration-1 underline-offset-1"
+                    >
+                        CC BY-SA 3.0
+                    </a>
+                </div>
             </motion.div>
 
             {/* Extract / Summary */}

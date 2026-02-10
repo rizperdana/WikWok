@@ -82,7 +82,7 @@ export const AdCard = memo(function AdCard() {
                         ref={adRef}
                         style={{ display: 'block', width: '100%' }}
                         data-ad-client={`ca-pub-${pId.replace('pub-', '')}`}
-                        data-ad-slot="1234567890"
+                        data-ad-slot="wikwok_feed_ad"
                         data-ad-format="auto"
                         data-full-width-responsive="true" />
                     <Script

@@ -4,6 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { GoogleAdSense } from "@/components/GoogleAdSense";
+import { Footer } from "@/components/Footer";
 
 const inter = Inter({ subsets: ["latin"], display: 'swap' });
 
@@ -35,9 +36,10 @@ export default function RootLayout({
       <head>
         <GoogleAdSense />
       </head>
-      <body className={`${inter.className} bg-black text-white antialiased overflow-hidden`}>
+      <body className={`${inter.className} bg-black text-white antialiased`}>
         <Providers>
             {children}
+            <Footer />
         </Providers>
         {/* Vercel Analytics - lightweight client-side integration */}
         <Script src="https://vercel.live/analytics.js" strategy="afterInteractive" />

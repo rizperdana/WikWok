@@ -53,35 +53,44 @@ export async function GET(request: Request) {
          }
 
     } else if (mode === 'trending') {
-        try {
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
-            const year = yesterday.getFullYear();
-            const month = String(yesterday.getMonth() + 1).padStart(2, '0');
-            const day = String(yesterday.getDate()).padStart(2, '0');
+         try {
+             const today = new Date();
+             const yesterday = new Date(today);
+             yesterday.setDate(yesterday.getDate() - 1);
+             let year = yesterday.getFullYear();
+             let month = String(yesterday.getMonth() + 1).padStart(2, '0');
+             let day = String(yesterday.getDate()).padStart(2, '0');
 
-            const url = `https://wikimedia.org/api/rest_v1/metrics/pageviews/top/${lang}.wikipedia/all-access/${year}/${month}/${day}`;
-            const res = await fetch(url);
-            if (!res.ok) return NextResponse.json([]);
-            const data = await res.json();
+             let url = `https://wikimedia.org/api/rest_v1/metrics/pageviews/top/${lang}.wikipedia/all-access/${year}/${month}/${day}`;
+             let res = await fetch(url);
 
-            const articles = data.items?.[0]?.articles || [];
-            const results = articles
-                .filter((a: any) => !a.article.startsWith('Special:') && !a.article.startsWith('Main_Page') && !a.article.includes(':'))
-                .slice(0, 5)
-                .map((a: any) => ({
-                    title: a.article.replace(/_/g, ' '),
-                    views: a.views > 1000 ? `${(a.views / 1000).toFixed(1)}k` : String(a.views)
-                }));
+             // Fallback to 'en' if specific lang fails or if data not found (404)
+             if (!res.ok || lang === 'en') {
+                 year = today.getFullYear();
+                 month = String(today.getMonth() + 1).padStart(2, '0');
+                 day = String(today.getDate()).padStart(2, '0');
+                 url = `https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/${year}/${month}/${day}`;
+                 res = await fetch(url);
+             }
 
-            // Cache trending for 1 hour
-            return NextResponse.json(results, {
-                 headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200' }
-            });
-        } catch (e) {
-            return NextResponse.json([], { status: 500 });
-        }
+             if (!res.ok) return NextResponse.json([]);
+
+             const data = await res.json();
+             const articles = data.items?.[0]?.articles || [];
+             const results = articles
+                 .filter((a: any) => !a.article.startsWith('Special:') && !a.article.startsWith('Main_Page') && !a.article.includes(':'))
+                 .slice(0, 5)
+                 .map((a: any) => ({
+                     title: a.article.replace(/_/g, ' '),
+                     views: a.views > 1000 ? `${(a.views / 1000).toFixed(1)}k` : String(a.views)
+                 }));
+
+              return NextResponse.json(results, {
+                  headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7202' }
+              });
+          } catch (e) {
+              return NextResponse.json([], { status: 500 });
+          }
     }
 
     return NextResponse.json({ error: 'Invalid mode' }, { status: 400 });

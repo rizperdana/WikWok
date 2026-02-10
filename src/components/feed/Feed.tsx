@@ -52,6 +52,24 @@ export function Feed({ initialArticles = [] }: FeedProps) {
     }
   }, [searchResults]);
 
+  // Prefetch observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !searchResults && hasNextPage && !isFetching) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: '400%', threshold: 0 }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasNextPage, fetchNextPage, searchResults, isFetching]);
+
   if (feedItems.length === 0 && isFetching && !searchResults) {
       return (
           <div className="h-screen w-full flex flex-col items-center justify-center bg-[#060606] text-white gap-6">
@@ -66,38 +84,6 @@ export function Feed({ initialArticles = [] }: FeedProps) {
 
   const currentLang = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
   const displayItems = searchResults || feedItems;
-
-  // Prefetch observer - placed after displayItems is defined
-  useEffect(() => {
-    let fetchInFlight = false;
-    let prefetchCooldown = false;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !searchResults && !prefetchCooldown) {
-          // If we have few items remaining, prefetch aggressively
-          const needsPrefetch = !hasNextPage || feedItems.length <= 6;
-
-          if (needsPrefetch && !fetchInFlight) {
-            fetchInFlight = true;
-
-            fetchNextPage().finally(() => {
-              fetchInFlight = false;
-              prefetchCooldown = true;
-              setTimeout(() => { prefetchCooldown = false; }, 500);
-            });
-          }
-        }
-      },
-      { rootMargin: '150%', threshold: 0 }
-    );
-
-    if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasNextPage, fetchNextPage, searchResults, feedItems]);
 
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[#060606] flex justify-center">
@@ -344,21 +330,21 @@ export function Feed({ initialArticles = [] }: FeedProps) {
                   {trendingTopics.length > 0 ? (
                       trendingTopics.map((topic, i) => (
                           <PulseItem
-                            key={i}
-                            label={topic.title}
-                            count={topic.views}
-                            onClick={() => setReadingArticle({
-                                title: topic.title,
-                                lang: lang,
-                                pageid: 0,
-                                ns: 0,
-                                extract: '',
-                                thumbnail: undefined
-                            } as any)}
+                              key={i}
+                              label={topic.title}
+                              count={topic.views}
+                              onClick={() => setReadingArticle({
+                                  title: topic.title,
+                                  lang: lang,
+                                  pageid: 0,
+                                  ns: 0,
+                                  extract: '',
+                                  thumbnail: undefined
+                              } as any)}
                           />
                       ))
                   ) : (
-                      <p className="text-xs text-white/30">Loading trends...</p>
+                      <p className="text-xs text-white/30">No trending topics</p>
                   )}
               </div>
           </div>

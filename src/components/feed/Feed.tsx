@@ -5,7 +5,8 @@ import { useWikwokFeed } from '@/lib/hooks/useWikwokFeed';
 import { AuthButton } from '@/components/auth/AuthButton';
 import { getTrendingTopics, TrendingTopic } from '@/lib/services/wikipedia';
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, ChevronDown, Check, Search, ArrowLeft, House, Bell } from 'lucide-react';
+import { Loader2, ChevronDown, Check, Search, ArrowLeft, House, Bell, Menu, Info, FileText, Shield, Mail } from 'lucide-react';
+import Link from 'next/link';
 import { LANGUAGES } from '@/lib/constants/languages';
 import { WikiArticle, FeedItem } from '@/types';
 import dynamic from 'next/dynamic';
@@ -39,6 +40,7 @@ export function Feed({ initialArticles = [] }: FeedProps) {
   const [regionSearch, setRegionSearch] = useState('');
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([]);
   const [readingArticle, setReadingArticle] = useState<WikiArticle | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Fetch trending topics when language changes
   useEffect(() => {
@@ -240,6 +242,15 @@ export function Feed({ initialArticles = [] }: FeedProps) {
               <SidebarItem label="Explore" active={!!searchResults} onClick={() => setIsSearchOpen(true)} />
               <SidebarItem label="Notifications" />
               <SidebarItem label="Profile" onClick={() => setIsProfileOpen(true)} />
+
+              {/* Legal & Info Links */}
+              <div className="pt-4 mt-2 border-t border-white/10">
+                <p className="px-4 mb-2 text-[10px] text-white/30 uppercase tracking-widest font-bold">Legal & Info</p>
+                <SidebarLink href="/about" label="About" icon={<Info size={16} />} />
+                <SidebarLink href="/contact" label="Contact" icon={<Mail size={16} />} />
+                <SidebarLink href="/privacy" label="Privacy" icon={<Shield size={16} />} />
+                <SidebarLink href="/terms" label="Terms" icon={<FileText size={16} />} />
+              </div>
           </nav>
 
           <div className="mt-auto pt-6">
@@ -390,7 +401,54 @@ export function Feed({ initialArticles = [] }: FeedProps) {
               <Bell size={24} />
               <span className="text-[10px] font-medium">Activity</span>
           </button>
+
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="flex flex-col items-center gap-1 p-2 text-white/40 active:text-white transition-colors"
+          >
+              <Menu size={24} />
+              <span className="text-[10px] font-medium">More</span>
+          </button>
       </div>
+
+      {/* Mobile Menu Sheet */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] md:hidden"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed bottom-0 left-0 right-0 z-[101] bg-[#111111] rounded-t-3xl p-6 md:hidden safe-area-bottom"
+            >
+              <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-6" />
+              <h2 className="text-white font-bold text-xl mb-6">More Options</h2>
+
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <MobileMenuLink href="/about" icon={<Info size={20} />} label="About" onClose={() => setIsMobileMenuOpen(false)} />
+                <MobileMenuLink href="/contact" icon={<Mail size={20} />} label="Contact" onClose={() => setIsMobileMenuOpen(false)} />
+                <MobileMenuLink href="/privacy" icon={<Shield size={20} />} label="Privacy" onClose={() => setIsMobileMenuOpen(false)} />
+                <MobileMenuLink href="/terms" icon={<FileText size={20} />} label="Terms" onClose={() => setIsMobileMenuOpen(false)} />
+              </div>
+
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="w-full py-4 bg-white/10 rounded-xl text-white font-bold transition-colors hover:bg-white/20"
+              >
+                Close
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -403,6 +461,33 @@ function SidebarItem({ label, active = false, onClick }: { label: string, active
         >
             <span className="font-bold">{label}</span>
         </div>
+    )
+}
+
+function SidebarLink({ href, label, icon }: { href: string, label: string, icon: React.ReactNode }) {
+    return (
+        <Link
+            href={href}
+            className="px-4 py-3 rounded-xl flex items-center gap-4 cursor-pointer transition-colors text-white/60 hover:bg-white/5 hover:text-white"
+        >
+            {icon}
+            <span className="font-bold">{label}</span>
+        </Link>
+    )
+}
+
+function MobileMenuLink({ href, icon, label, onClose }: { href: string, icon: React.ReactNode, label: string, onClose: () => void }) {
+    return (
+        <Link
+            href={href}
+            onClick={onClose}
+            className="flex flex-col items-center gap-3 p-4 bg-white/5 rounded-2xl text-white hover:bg-white/10 transition-colors"
+        >
+            <div className="p-3 bg-cerulean-500/20 rounded-full text-cerulean-400">
+                {icon}
+            </div>
+            <span className="text-sm font-bold">{label}</span>
+        </Link>
     )
 }
 

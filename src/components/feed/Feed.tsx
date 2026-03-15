@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWikwokFeed } from '@/lib/hooks/useWikwokFeed';
 
-import { getTrendingTopics, TrendingTopic } from '@/lib/services/wikipedia';
+import { getTrendingTopics, TrendingTopic, searchWikipedia } from '@/lib/services/wikipedia';
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, ChevronDown, Check, Search, ArrowLeft, House, Menu, Info, FileText, Shield, Mail, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
@@ -537,8 +537,18 @@ export function Feed({ initialArticles = [] }: FeedProps) {
                     {trendingTopics.slice(0, 10).map((topic, index) => (
                       <button
                         key={topic.title}
-                        onClick={() => {
+                        onClick={async () => {
                           setShowTrending(false);
+                          // Search for the trending topic and open the first result
+                          const results = await searchWikipedia(topic.title, lang);
+                          if (results && results.length > 0) {
+                            setSearchResults(results.map(r => ({
+                              type: 'article' as const,
+                              data: r,
+                              id: r.title
+                            })));
+                            setSearchViewMode('grid');
+                          }
                         }}
                         className="w-full flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors text-left"
                       >

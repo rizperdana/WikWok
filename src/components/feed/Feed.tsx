@@ -41,6 +41,8 @@ export function Feed({ initialArticles = [] }: FeedProps) {
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
+  const prevItemsLengthRef = useRef(0);
+  const userScrolledRef = useRef(false);
 
   const [searchViewMode, setSearchViewMode] = useState<'grid' | 'feed'>('grid');
   const [activeBg, setActiveBg] = useState<string | null>(null);
@@ -52,6 +54,49 @@ export function Feed({ initialArticles = [] }: FeedProps) {
   const [readingArticle, setReadingArticle] = useState<WikiArticle | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showTrending, setShowTrending] = useState(false);
+
+  // Track user scroll to prevent auto-scroll when new items load
+  useEffect(() => {
+    const mainEl = mainRef.current;
+    if (!mainEl) return;
+
+    const handleScroll = () => {
+      // Check if user has scrolled down from top
+      if (mainEl.scrollTop > 10) {
+        userScrolledRef.current = true;
+      }
+    };
+
+    mainEl.addEventListener('scroll', handleScroll, { passive: true });
+    return () => mainEl.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Prevent scroll jumping when new items are added
+  useEffect(() => {
+    if (!mainRef.current) return;
+    
+    const currentLength = feedItems.length;
+    const prevLength = prevItemsLengthRef.current;
+    
+    // Only prevent scroll if user has scrolled down and new items were added
+    if (userScrolledRef.current && currentLength > prevLength) {
+      // Keep current scroll position when new items are added
+      const scrollHeight = mainRef.current.scrollHeight;
+      const clientHeight = mainRef.current.clientHeight;
+      const currentScroll = mainRef.current.scrollTop;
+      
+      // Calculate the height of newly added items
+      const newItemsHeight = scrollHeight - (prevLength > 0 ? (scrollHeight / currentLength) * (currentLength - prevLength) : 0);
+      
+      // Adjust scroll to account for new content, but only if we're near the bottom
+      if (scrollHeight - currentScroll - clientHeight < 200) {
+        // User was near bottom, maintain relative position
+        mainRef.current.scrollTop = currentScroll;
+      }
+    }
+    
+    prevItemsLengthRef.current = currentLength;
+  }, [feedItems.length]);
 
   // Fetch trending topics when language changes
   useEffect(() => {
@@ -65,15 +110,19 @@ export function Feed({ initialArticles = [] }: FeedProps) {
     }
   }, [searchResults]);
 
-  // Prefetch observer
+  // Prefetch observer - load more when near bottom
   useEffect(() => {
+    // Don't fetch if we have search results or are already fetching or no more pages
+    if (searchResults || isFetching || hasNextPage === false) return;
+    
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !searchResults && hasNextPage && !isFetching) {
+          console.log('Loading more pages...');
           fetchNextPage();
         }
       },
-      { rootMargin: '400%', threshold: 0 }
+      { rootMargin: '200px', threshold: 0 }
     );
 
     if (loadMoreRef.current) {

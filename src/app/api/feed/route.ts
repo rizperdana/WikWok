@@ -12,8 +12,10 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const lang = searchParams.get('lang') || request.headers.get('x-wiki-lang') || DEFAULT_LANG;
   const limitParam = searchParams.get('limit');
-  const count = limitParam ? parseInt(limitParam) : 5;
-  const cacheKey = `${lang}:${count}`;
+  const pageParam = searchParams.get('page') || '0';
+  const count = limitParam ? parseInt(limitParam) : 8;
+  // Include page in cache key so each page gets different results
+  const cacheKey = `${lang}:${pageParam}:${count}`;
 
   // Check cache first
   const cached = feedCache.get(cacheKey);

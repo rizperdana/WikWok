@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, ExternalLink } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { getWikiPageHtml } from '@/lib/services/wikipedia';
 
 interface ArticleReaderProps {
@@ -12,34 +12,44 @@ interface ArticleReaderProps {
   lang?: string;
 }
 
-export function ArticleReader({ isOpen, onClose, title, lang = 'en' }: ArticleReaderProps) {
+export function ArticleReader({ isOpen, onClose, title, lang }: ArticleReaderProps) {
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Ensure we have valid lang
+  const wikiLang = lang || 'en';
 
   useEffect(() => {
     if (isOpen && title) {
+      console.log('Loading article:', title, 'lang:', wikiLang);
       setLoading(true);
-      getWikiPageHtml(title, lang)
+      setError(null);
+      setHtmlContent(null);
+      
+      getWikiPageHtml(title, wikiLang)
         .then((html) => {
-            // Basic sanitization/adjustment could happen here if needed
-            // But usually we trust Wikipedia HTML structure.
-            // We might want to fix relative images though.
             if (html) {
-                // Fix relative links (href="./Foo") to absolute for functionality or disable them
-                // Fix relative images (src="./Foo")
                 const fixedHtml = html
-                    .replace(/src="\.\//g, `src="https://${lang}.wikipedia.org/wiki/`)
-                    .replace(/href="\.\//g, `href="https://${lang}.wikipedia.org/wiki/`)
+                    .replace(/src="\.\//g, `src="https://${wikiLang}.wikipedia.org/wiki/`)
+                    .replace(/href="\.\//g, `href="https://${wikiLang}.wikipedia.org/wiki/`)
                     .replace(/src="\/\//g, 'src="https://');
 
                 setHtmlContent(fixedHtml);
+            } else {
+                setError('Article not found');
             }
+        })
+        .catch((err) => {
+            console.error('Failed to load article:', err);
+            setError('Failed to load article');
         })
         .finally(() => setLoading(false));
     } else {
         setHtmlContent(null);
+        setError(null);
     }
-  }, [isOpen, title, lang]);
+  }, [isOpen, title, wikiLang]);
 
   return (
     <AnimatePresence>
@@ -65,8 +75,12 @@ export function ArticleReader({ isOpen, onClose, title, lang = 'en' }: ArticleRe
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-4 md:p-8">
             {loading ? (
-                <div className="h-full flex items-center justify-center text-cerulean-500">
+                <div className="h-full flex items-center justify-center text-gray-400">
                     <Loader2 className="animate-spin" size={40} />
+                </div>
+            ) : error ? (
+                <div className="h-full flex flex-col items-center justify-center text-gray-500">
+                    <p>{error}</p>
                 </div>
             ) : htmlContent ? (
                 <>
@@ -83,12 +97,12 @@ export function ArticleReader({ isOpen, onClose, title, lang = 'en' }: ArticleRe
                     </style>
                     <article
                         className="wiki-content prose prose-lg max-w-3xl mx-auto"
-                        dangerouslySetInnerHTML={{ __html: htmlContent }}
+                        dangerouslySetInnerHTML={{ __html: htmlContent || '' }}
                     />
                 </>
             ) : (
-                <div className="h-full flex flex-col items-center justify-center text-white/50">
-                    <p>Failed to load article.</p>
+                <div className="h-full flex flex-col items-center justify-center text-gray-500">
+                    <p>Loading...</p>
                 </div>
             )}
           </div>

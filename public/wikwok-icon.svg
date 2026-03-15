@@ -1,24 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <!-- Background circle with gradient - representing discovery/play -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- TikTok cyan to magenta gradient -->
   <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#e63946"/>
-      <stop offset="100%" style="stop-color:#457b9d"/>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#25F4EE"/>
+      <stop offset="100%" style="stop-color:#FE2C55"/>
     </linearGradient>
   </defs>
   
-  <!-- Rounded square background -->
-  <rect x="32" y="32" width="448" height="448" rx="80" fill="url(#grad)"/>
+  <!-- Rounded rectangle - TikTok style -->
+  <rect x="32" y="32" width="448" height="448" rx="90" fill="url(#grad)"/>
   
-  <!-- W letter for Wikwok -->
-  <path d="M140 160 L180 320 L220 220 L256 360 L292 220 L332 320 L372 160 L320 160 L290 250 L256 160 L222 250 L192 160 Z" 
-        fill="white" 
+  <!-- Wikipedia-style W in white -->
+  <path d="M120 160 L170 330 L220 200 L256 340 L292 200 L342 330 L392 160" 
+        fill="none" 
         stroke="white" 
-        stroke-width="8" 
+        stroke-width="32" 
+        stroke-linecap="round" 
         stroke-linejoin="round"/>
   
-  <!-- Play/discovery indicator dots -->
-  <circle cx="200" cy="400" r="16" fill="white" opacity="0.9"/>
-  <circle cx="256" cy="400" r="16" fill="white" opacity="0.9"/>
-  <circle cx="312" cy="400" r="16" fill="white" opacity="0.9"/>
+  <!-- TikTok music note dot at bottom -->
+  <circle cx="256" cy="400" r="24" fill="white"/>
 </svg>

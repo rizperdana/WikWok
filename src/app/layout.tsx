@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   title: "Wikwok - Discover Knowledge",
   description: "TikTok-style discovery engine for Wikipedia",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/wikwok-icon.svg",
+    apple: "/wikwok-icon.svg",
+  },
   other: {
     "google-adsense-account": "ca-pub-2762935447490628",
   }

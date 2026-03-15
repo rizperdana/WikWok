@@ -1,23 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- TikTok cyan to magenta gradient -->
-  <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#25F4EE"/>
-      <stop offset="100%" style="stop-color:#FE2C55"/>
-    </linearGradient>
-  </defs>
+  <!-- Black rounded background -->
+  <rect x="32" y="32" width="448" height="448" rx="90" fill="#000000"/>
   
-  <!-- Rounded rectangle - TikTok style -->
-  <rect x="32" y="32" width="448" height="448" rx="90" fill="url(#grad)"/>
-  
-  <!-- Wikipedia-style W in white -->
+  <!-- W with cyan fill and magenta outline -->
   <path d="M120 160 L170 330 L220 200 L256 340 L292 200 L342 330 L392 160" 
         fill="none" 
-        stroke="white" 
-        stroke-width="32" 
+        stroke="#FE2C55" 
+        stroke-width="40" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"/>
+  <path d="M120 160 L170 330 L220 200 L256 340 L292 200 L342 330 L392 160" 
+        fill="none" 
+        stroke="#25F4EE" 
+        stroke-width="24" 
         stroke-linecap="round" 
         stroke-linejoin="round"/>
   
-  <!-- TikTok music note dot at bottom -->
-  <circle cx="256" cy="400" r="24" fill="white"/>
+  <!-- Bottom dot -->
+  <circle cx="256" cy="400" r="20" fill="#25F4EE"/>
 </svg>

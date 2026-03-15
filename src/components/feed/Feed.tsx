@@ -417,6 +417,7 @@ export function Feed({ initialArticles = [] }: FeedProps) {
         onClose={() => setReadingArticle(null)}
         title={readingArticle?.title || ''}
         lang={readingArticle?.lang}
+        pageUrl={readingArticle?.page_url}
       />
 
 

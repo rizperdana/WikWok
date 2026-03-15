@@ -14,9 +14,11 @@ export interface WikiArticle {
       page: string;
     };
   };
-  lang?: string; // added for checking which wiki it came from
+  lang?: string;
   pageid?: number;
   ns?: number;
+  // Store the page URL directly for article reader
+  page_url?: string;
 }
 
 export type FeedItem =

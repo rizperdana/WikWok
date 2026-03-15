@@ -25,15 +25,16 @@ export async function GET(request: Request) {
                      if (!res.ok) return null;
                      const data = await res.json();
 
-                     if (data.type === 'standard' || data.type === 'disambiguation') {
-                        return {
-                            title: data.title,
-                            extract: data.extract,
-                            originalimage: data.originalimage,
-                            content_urls: data.content_urls,
-                            lang: lang
-                        };
-                     }
+                      if (data.type === 'standard' || data.type === 'disambiguation') {
+                         return {
+                             title: data.title,
+                             extract: data.extract,
+                             originalimage: data.originalimage,
+                             content_urls: data.content_urls,
+                             lang: lang,
+                             page_url: data.content_urls?.mobile?.page || data.content_urls?.desktop?.page
+                         };
+                      }
                      return null;
                  } catch (e) {
                      return null;

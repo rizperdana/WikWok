@@ -121,7 +121,8 @@ export async function fetchRandomArticle(lang: string): Promise<WikiArticle | nu
         extract: data.extract,
         originalimage: data.originalimage,
         content_urls: data.content_urls,
-        lang: lang
+        lang: lang,
+        page_url: data.content_urls?.mobile?.page || data.content_urls?.desktop?.page
       };
     }
     return null;

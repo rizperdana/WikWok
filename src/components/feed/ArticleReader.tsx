@@ -10,46 +10,52 @@ interface ArticleReaderProps {
   onClose: () => void;
   title: string;
   lang?: string;
+  pageUrl?: string;
 }
 
-export function ArticleReader({ isOpen, onClose, title, lang }: ArticleReaderProps) {
+export function ArticleReader({ isOpen, onClose, title, lang, pageUrl }: ArticleReaderProps) {
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Ensure we have valid lang
+  // Use page_url if available, otherwise construct from title
   const wikiLang = lang || 'en';
-
+  
   useEffect(() => {
     if (isOpen && title) {
-      console.log('Loading article:', title, 'lang:', wikiLang);
+      console.log('Loading article:', title, 'lang:', wikiLang, 'url:', pageUrl);
       setLoading(true);
       setError(null);
       setHtmlContent(null);
       
-      getWikiPageHtml(title, wikiLang)
-        .then((html) => {
-            if (html) {
-                const fixedHtml = html
-                    .replace(/src="\.\//g, `src="https://${wikiLang}.wikipedia.org/wiki/`)
-                    .replace(/href="\.\//g, `href="https://${wikiLang}.wikipedia.org/wiki/`)
-                    .replace(/src="\/\//g, 'src="https://');
+      // Use page URL directly if available
+      const fetchUrl = pageUrl 
+        ? `/api/wiki/page?url=${encodeURIComponent(pageUrl)}`
+        : `/api/wiki/page?title=${encodeURIComponent(title)}&lang=${wikiLang}`;
+      
+      fetch(fetchUrl)
+        .then(res => {
+          if (!res.ok) throw new Error('Page not found');
+          return res.text();
+        })
+        .then(html => {
+            const fixedHtml = html
+                .replace(/src="\.\//g, `src="https://${wikiLang}.wikipedia.org/wiki/`)
+                .replace(/href="\.\//g, `href="https://${wikiLang}.wikipedia.org/wiki/`)
+                .replace(/src="\/\//g, 'src="https://');
 
-                setHtmlContent(fixedHtml);
-            } else {
-                setError('Article not found');
-            }
+            setHtmlContent(fixedHtml);
         })
         .catch((err) => {
             console.error('Failed to load article:', err);
-            setError('Failed to load article');
+            setError('Article not found');
         })
         .finally(() => setLoading(false));
     } else {
         setHtmlContent(null);
         setError(null);
     }
-  }, [isOpen, title, wikiLang]);
+  }, [isOpen, title, wikiLang, pageUrl]);
 
   return (
     <AnimatePresence>

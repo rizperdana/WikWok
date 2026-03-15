@@ -2,7 +2,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "framework": "nextjs",
-  "regions": ["hnd1"],
+  "regions": ["sin1"],
   "headers": [
     {
       "source": "/api/(.*)",

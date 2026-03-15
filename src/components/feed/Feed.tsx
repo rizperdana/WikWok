@@ -2,14 +2,17 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWikwokFeed } from '@/lib/hooks/useWikwokFeed';
+import { usePWAInstall } from '@/lib/hooks/usePWAInstall';
 
 import { getTrendingTopics, TrendingTopic, searchWikipedia } from '@/lib/services/wikipedia';
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, ChevronDown, Check, Search, ArrowLeft, House, Menu, Info, FileText, Shield, Mail, TrendingUp } from 'lucide-react';
+import { Loader2, ChevronDown, Check, Search, ArrowLeft, House, Menu, Info, FileText, Shield, Mail, TrendingUp, Download } from 'lucide-react';
 import Link from 'next/link';
 import { LANGUAGES } from '@/lib/constants/languages';
 import { WikiArticle, FeedItem } from '@/types';
 import dynamic from 'next/dynamic';
+import { PWAInstallBanner } from '@/components/PWAInstallBanner';
+import { PWAInstallButton } from '@/components/PWAInstallButton';
 
 const WikiCard = dynamic(() => import('./WikiCard').then(mod => mod.WikiCard), {
     loading: () => <div className="h-[100dvh] w-full bg-[#060606] animate-pulse" />
@@ -38,6 +41,8 @@ export function Feed({ initialArticles = [] }: FeedProps) {
     detectionResult,
     hasManualOverride 
   } = useWikwokFeed(initialArticles);
+
+  const { canShowBanner, canShowButton, install, dismissBanner, isInstalling, isInstalled } = usePWAInstall();
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
@@ -277,6 +282,10 @@ export function Feed({ initialArticles = [] }: FeedProps) {
         </div>
       </motion.div>
 
+      {canShowBanner && (
+        <PWAInstallBanner onInstall={install} onDismiss={dismissBanner} isInstalling={isInstalling} />
+      )}
+
       <SearchOverlay
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
@@ -337,6 +346,12 @@ export function Feed({ initialArticles = [] }: FeedProps) {
                 <SidebarLink href="/terms" label="Terms" icon={<FileText size={16} />} />
               </div>
           </nav>
+
+          {canShowButton && (
+            <div className="mt-4">
+              <PWAInstallButton onInstall={install} isLoading={isInstalling} />
+            </div>
+          )}
 
           <div className="mt-auto pt-6">
               <p className="text-[10px] text-white/20 leading-relaxed uppercase tracking-widest font-bold">
@@ -482,6 +497,17 @@ export function Feed({ initialArticles = [] }: FeedProps) {
               <h2 className="text-white font-bold text-xl mb-6">More Options</h2>
 
               <div className="grid grid-cols-2 gap-4 mb-6">
+                {!isInstalled && (
+                  <button
+                    onClick={async () => { setIsMobileMenuOpen(false); await install(); }}
+                    className="flex flex-col items-center gap-3 p-4 bg-cerulean-500/10 rounded-2xl text-cerulean-400 hover:bg-cerulean-500/20 transition-colors"
+                  >
+                    <div className="p-3 bg-cerulean-500/20 rounded-full">
+                      <Download size={20} />
+                    </div>
+                    <span className="text-sm font-bold">Install App</span>
+                  </button>
+                )}
                 <MobileMenuLink href="/about" icon={<Info size={20} />} label="About" onClose={() => setIsMobileMenuOpen(false)} />
                 <MobileMenuLink href="/contact" icon={<Mail size={20} />} label="Contact" onClose={() => setIsMobileMenuOpen(false)} />
                 <MobileMenuLink href="/privacy" icon={<Shield size={20} />} label="Privacy" onClose={() => setIsMobileMenuOpen(false)} />

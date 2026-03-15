@@ -67,15 +67,40 @@ export function getWikimediaImageUrl(url: string, width: number = 800): string {
   }
 }
 
-// Preload image by creating a link element
+// Aggressive image preloading with multiple strategies
 export function preloadImage(src: string): void {
   if (!src || typeof document === 'undefined') return;
 
+  // Method 1: Link preload (most compatible)
   const link = document.createElement('link');
   link.rel = 'preload';
   link.as = 'image';
   link.href = src;
+  link.crossOrigin = 'anonymous';
   document.head.appendChild(link);
+
+  // Method 2: Image object preloading (fallback)
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.src = src;
+}
+
+// Preload multiple images in parallel
+export function preloadImages(sources: string[]): void {
+  sources.forEach(src => preloadImage(src));
+}
+
+// Get optimized image URL (server-side safe)
+export function getOptimizedImageUrl(url: string, width: number = 800): string {
+  if (!url) return '';
+
+  // Wikimedia supports WebP, so try WebP version first
+  const webpUrl = url.replace(/\.(jpg|jpeg|png)$/i, '.webp');
+  if (webpUrl !== url) {
+    return getWikimediaImageUrl(webpUrl, width);
+  }
+
+  return getWikimediaImageUrl(url, width);
 }
 
 // Generate a tiny blurred placeholder (returns null if no URL)

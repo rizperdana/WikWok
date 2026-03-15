@@ -6,7 +6,12 @@ import { Providers } from "@/components/providers";
 import { GoogleAdSense } from "@/components/GoogleAdSense";
 import { Footer } from "@/components/Footer";
 
-const inter = Inter({ subsets: ["latin"], display: 'swap' });
+const inter = Inter({ 
+  subsets: ["latin"], 
+  display: 'swap',
+  variable: '--font-inter',
+  preload: true,
+});
 
 export const metadata: Metadata = {
   title: "Wikwok - Discover Knowledge",
@@ -36,10 +41,12 @@ export default function RootLayout({
       <head>
         <GoogleAdSense />
       </head>
-      <body className={`${inter.className} bg-black text-white antialiased`}>
+      <body className={`${inter.variable} font-sans bg-black text-white antialiased`}>
         <Providers>
             {children}
-            <Footer />
+            <div className="lg:hidden">
+              <Footer />
+            </div>
         </Providers>
         {/* Vercel Analytics - lightweight client-side integration */}
         <Script src="https://vercel.live/analytics.js" strategy="afterInteractive" />

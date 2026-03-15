@@ -9,6 +9,14 @@ const nextConfig: NextConfig = {
         hostname: 'upload.wikimedia.org',
       },
     ],
+    formats: ['image/webp', 'image/avif'],
+  },
+  // Bundle optimization
+  experimental: {
+    optimizePackageImports: ['lucide-react'],
+  },
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
   },
   // Silence Turbopack error since we use next-pwa (webpack based)
   turbopack: {},

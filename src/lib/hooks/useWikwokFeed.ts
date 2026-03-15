@@ -4,10 +4,19 @@ import { FeedManager, FeedState } from '@/lib/feed-manager';
 import { useEffect, useState, useRef } from 'react';
 import { getRandomInt } from '@/lib/utils';
 import { DEFAULT_LANG } from '../constants/languages';
+import { 
+  detectUserLanguage, 
+  getStoredLanguage, 
+  storeLanguagePreference, 
+  hasManualLanguageOverride,
+  GeolocationResult 
+} from '@/lib/utils/geolocation';
 
 export function useWikwokFeed(initialArticles: WikiArticle[] = []) {
   const queryClient = useQueryClient();
   const [lang, setLang] = useState<string>(DEFAULT_LANG);
+  const [isDetectingLanguage, setIsDetectingLanguage] = useState(false);
+  const [detectionResult, setDetectionResult] = useState<GeolocationResult | null>(null);
 
   // Initialize with passed articles if available
   const [feedState, setFeedState] = useState<FeedState>({
@@ -23,23 +32,51 @@ export function useWikwokFeed(initialArticles: WikiArticle[] = []) {
   const initializedRef = useRef(false);
   const processedPagesRef = useRef(0);
 
-  // Instant Local Detection
+  // Enhanced language detection with geolocation
   useEffect(() => {
     if (typeof window !== 'undefined' && !initializedRef.current) {
-        // Only run auto-detect if we didn't receive initial articles (which implies we pre-fetched for default lang)
-        // OR if we want to switch lang dynamically?
-        // For SSR, we usually stick to default or detected on server.
-        // Let's keep it simple: if specific logic needed, add here.
-        const browserLang = navigator.language.split('-')[0];
-        if (browserLang && browserLang !== DEFAULT_LANG) {
-             // If browser lang differs from default, we might want to switch?
-             // But we already rendered initial articles in default lang.
-             // Changing this triggers a refetch which might be jarring but correct.
-             console.log('Detected browser lang:', browserLang);
-             setLang(browserLang);
+      const initializeLanguage = async () => {
+        try {
+          setIsDetectingLanguage(true);
+          
+          // Check if user has manually set a language preference
+          const storedLang = getStoredLanguage();
+          if (storedLang) {
+            console.log('Using stored language preference:', storedLang);
+            setLang(storedLang);
+            return;
+          }
+
+          // Auto-detect language based on location
+          const result = await detectUserLanguage();
+          setDetectionResult(result);
+          
+          console.log('Detected language:', result.detectedLang, 'via:', result.method);
+          
+          // Only change language if detection differs from current default
+          if (result.detectedLang !== DEFAULT_LANG) {
+            setLang(result.detectedLang);
+          }
+          
+        } catch (error) {
+          console.error('Language detection failed:', error);
+          // Fallback to default language (Indonesian)
+          setLang(DEFAULT_LANG);
+        } finally {
+          setIsDetectingLanguage(false);
         }
+      };
+
+      initializeLanguage();
     }
   }, []);
+
+  // Wrapper for setLang that stores preference
+  const handleLanguageChange = (newLang: string) => {
+    setLang(newLang);
+    storeLanguagePreference(newLang);
+    console.log('Language changed to:', newLang, '(manual override)');
+  };
 
   // Initialize random gap (only if empty)
   useEffect(() => {
@@ -112,10 +149,13 @@ export function useWikwokFeed(initialArticles: WikiArticle[] = []) {
   return {
     items: feedState.items,
     lang,
-    setLang,
+    setLang: handleLanguageChange,
     fetchNextPage,
     hasNextPage,
     isFetching,
-    isError
+    isError,
+    isDetectingLanguage,
+    detectionResult,
+    hasManualOverride: hasManualLanguageOverride()
   };
 }

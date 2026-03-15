@@ -49,4 +49,4 @@ export const LANGUAGES = [
   { code: 'gor', name: 'Gorontalo', flag: '🌽' },
 ];
 
-export const DEFAULT_LANG = 'en';
+export const DEFAULT_LANG = 'id';

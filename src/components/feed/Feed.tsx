@@ -2,10 +2,10 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWikwokFeed } from '@/lib/hooks/useWikwokFeed';
-import { AuthButton } from '@/components/auth/AuthButton';
+
 import { getTrendingTopics, TrendingTopic } from '@/lib/services/wikipedia';
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, ChevronDown, Check, Search, ArrowLeft, House, Bell, Menu, Info, FileText, Shield, Mail } from 'lucide-react';
+import { Loader2, ChevronDown, Check, Search, ArrowLeft, House, Menu, Info, FileText, Shield, Mail, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { LANGUAGES } from '@/lib/constants/languages';
 import { WikiArticle, FeedItem } from '@/types';
@@ -18,7 +18,7 @@ const AdCard = dynamic(() => import('./AdCard').then(mod => mod.AdCard));
 const SearchOverlay = dynamic(() => import('./SearchOverlay').then(mod => mod.SearchOverlay), { ssr: false });
 const SearchResultsGrid = dynamic(() => import('./SearchResultsGrid').then(mod => mod.SearchResultsGrid));
 const ArticleReader = dynamic(() => import('./ArticleReader').then(mod => mod.ArticleReader), { ssr: false });
-const ProfileOverlay = dynamic(() => import('./ProfileOverlay').then(mod => mod.ProfileOverlay), { ssr: false });
+
 
 
 
@@ -27,8 +27,18 @@ interface FeedProps {
 }
 
 export function Feed({ initialArticles = [] }: FeedProps) {
-  const { items: feedItems, lang, setLang, fetchNextPage, hasNextPage, isFetching } = useWikwokFeed(initialArticles);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const { 
+    items: feedItems, 
+    lang, 
+    setLang, 
+    fetchNextPage, 
+    hasNextPage, 
+    isFetching, 
+    isDetectingLanguage,
+    detectionResult,
+    hasManualOverride 
+  } = useWikwokFeed(initialArticles);
+
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
 
@@ -41,6 +51,7 @@ export function Feed({ initialArticles = [] }: FeedProps) {
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([]);
   const [readingArticle, setReadingArticle] = useState<WikiArticle | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showTrending, setShowTrending] = useState(false);
 
   // Fetch trending topics when language changes
   useEffect(() => {
@@ -72,13 +83,23 @@ export function Feed({ initialArticles = [] }: FeedProps) {
     return () => observer.disconnect();
   }, [hasNextPage, fetchNextPage, searchResults, isFetching]);
 
-  if (feedItems.length === 0 && isFetching && !searchResults) {
+  if (feedItems.length === 0 && (isFetching || isDetectingLanguage) && !searchResults) {
       return (
           <div className="h-screen w-full flex flex-col items-center justify-center bg-[#060606] text-white gap-6">
               <div className="w-12 h-12 border-4 border-cerulean-500/20 border-t-cerulean-500 rounded-full animate-spin-custom shadow-[0_0_20px_rgba(69,123,157,0.2)]"></div>
               <div className="text-center">
-                  <p className="text-lg font-bold text-white/80">Discovering knowledge...</p>
-                  <p className="text-sm text-white/50 mt-1">Loading random articles for you</p>
+                  <p className="text-lg font-bold text-white/80">
+                    {isDetectingLanguage ? 'Detecting your location...' : 'Discovering knowledge...'}
+                  </p>
+                  <p className="text-sm text-white/50 mt-1">
+                    {isDetectingLanguage ? 'Setting up the right language for you' : 'Loading random articles for you'}
+                  </p>
+                  {detectionResult && (
+                    <p className="text-xs text-white/30 mt-2">
+                      Detected via: {detectionResult.method}
+                      {detectionResult.location && ` • ${detectionResult.location.country}`}
+                    </p>
+                  )}
               </div>
           </div>
       );
@@ -125,6 +146,9 @@ export function Feed({ initialArticles = [] }: FeedProps) {
                         >
                             <span className="text-lg lg:text-2xl leading-none drop-shadow-sm">{currentLang.flag}</span>
                             <span className="drop-shadow-md">{currentLang.code}</span>
+                            {!hasManualOverride && detectionResult && (
+                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Auto-detected location" />
+                            )}
                             <ChevronDown size={14} className={`lg:w-[18px] lg:h-[18px] transition-transform duration-300 ${isRegionOpen ? 'rotate-180' : ''}`} />
                         </button>
                     )}
@@ -138,6 +162,25 @@ export function Feed({ initialArticles = [] }: FeedProps) {
                                 className="absolute top-full left-0 mt-4 w-64 bg-[#111111]/95 backdrop-blur-3xl border border-white/10 rounded-3xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] overflow-hidden z-[101]"
                             >
                                 <div className="p-3">
+                                    {/* Detection Info Header */}
+                                    {detectionResult && (
+                                        <div className="mb-3 p-2 bg-white/5 rounded-lg">
+                                            <div className="flex items-center justify-between text-xs text-white/60">
+                                                <span className="font-medium">
+                                                    {hasManualOverride ? 'Manual selection' : 'Auto-detected'}
+                                                </span>
+                                                <span className="text-white/40">
+                                                    {detectionResult.method}
+                                                </span>
+                                            </div>
+                                            {detectionResult.location && !hasManualOverride && (
+                                                <div className="text-xs text-white/40 mt-1">
+                                                    {detectionResult.location.city && `${detectionResult.location.city}, `}
+                                                    {detectionResult.location.country}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                     <div className="mb-2 relative">
                                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
                                         <input
@@ -181,11 +224,7 @@ export function Feed({ initialArticles = [] }: FeedProps) {
                 </div>
             </div>
 
-            {/* Top Right Controls */}
-            <div className="absolute top-4 right-4 lg:top-6 lg:right-6 flex items-center gap-3 lg:gap-4 pointer-events-auto">
-                {/* Mobile Search Removed as per request, moved to bottom nav */}
-                <AuthButton />
-            </div>
+
         </div>
       </motion.div>
 
@@ -231,17 +270,14 @@ export function Feed({ initialArticles = [] }: FeedProps) {
       {/* Desktop Left Sidebar: Trending/Nav */}
       <aside className="hidden lg:flex w-80 h-full flex-col p-6 z-20 relative">
           <div className="mb-10 mt-16 px-2">
-              <div className="relative w-32 h-32">
-                 <img src="/icon.png" alt="WIKWOK" className="w-full h-full object-contain" />
-              </div>
-              <p className="text-xs text-cerulean-500 font-bold uppercase tracking-widest mt-2 pl-2">Discovery Engine</p>
+              <h1 className="text-2xl font-bold text-white">Wikwok</h1>
+              <p className="text-xs text-cerulean-500 font-bold uppercase tracking-widest mt-2">Discovery Engine</p>
           </div>
 
           <nav className="flex flex-col gap-2">
               <SidebarItem label="Home" active={!searchResults} onClick={() => setSearchResults(null)} />
               <SidebarItem label="Explore" active={!!searchResults} onClick={() => setIsSearchOpen(true)} />
-              <SidebarItem label="Notifications" />
-              <SidebarItem label="Profile" onClick={() => setIsProfileOpen(true)} />
+              <SidebarItem label="Trending" onClick={() => setShowTrending(true)} icon={<TrendingUp size={16} />} />
 
               {/* Legal & Info Links */}
               <div className="pt-4 mt-2 border-t border-white/10">
@@ -325,41 +361,7 @@ export function Feed({ initialArticles = [] }: FeedProps) {
       </main>
       )}
 
-      {/* Desktop Right Sidebar: Post Info/Social */}
-      <aside className="hidden xl:flex w-96 h-full flex-col p-6 z-20">
-          <div className="flex items-center gap-4 mb-8">
-              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600" />
-              <div>
-                  <h3 className="font-bold">Guest Navigator</h3>
-                  <p className="text-sm text-white/50">Level 1 Knowledge Seeker</p>
-              </div>
-          </div>
 
-          <div className="flex-1 overflow-y-auto no-scrollbar">
-              <h4 className="text-sm font-bold uppercase tracking-widest text-white/40 mb-4">Trending Now</h4>
-              <div className="space-y-4">
-                  {trendingTopics.length > 0 ? (
-                      trendingTopics.map((topic, i) => (
-                          <PulseItem
-                              key={i}
-                              label={topic.title}
-                              count={topic.views}
-                              onClick={() => setReadingArticle({
-                                  title: topic.title,
-                                  lang: lang,
-                                  pageid: 0,
-                                  ns: 0,
-                                  extract: '',
-                                  thumbnail: undefined
-                              } as any)}
-                          />
-                      ))
-                  ) : (
-                      <p className="text-xs text-white/30">No trending topics</p>
-                  )}
-              </div>
-          </div>
-      </aside>
 
       <ArticleReader
         isOpen={!!readingArticle}
@@ -368,11 +370,7 @@ export function Feed({ initialArticles = [] }: FeedProps) {
         lang={readingArticle?.lang}
       />
 
-      <ProfileOverlay
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-        onReadArticle={setReadingArticle}
-      />
+
 
       {/* Mobile Bottom Navigation */}
       <div className="fixed bottom-0 left-0 w-full z-50 bg-[#060606]/90 backdrop-blur-xl border-t border-white/10 flex justify-around items-center h-[70px] pb-4 md:hidden safe-area-bottom">
@@ -396,10 +394,11 @@ export function Feed({ initialArticles = [] }: FeedProps) {
           </button>
 
           <button
-             className="flex flex-col items-center gap-1 p-2 text-white/40 active:text-white transition-colors"
+            onClick={() => setShowTrending(true)}
+            className="flex flex-col items-center gap-1 p-2 text-white/40 active:text-white transition-colors pointer-events-auto"
           >
-              <Bell size={24} />
-              <span className="text-[10px] font-medium">Activity</span>
+              <TrendingUp size={24} />
+              <span className="text-[10px] font-medium">Trending</span>
           </button>
 
           <button
@@ -449,16 +448,80 @@ export function Feed({ initialArticles = [] }: FeedProps) {
           </>
         )}
       </AnimatePresence>
+
+      {/* Trending Sheet */}
+      <AnimatePresence>
+        {showTrending && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] md:hidden"
+              onClick={() => setShowTrending(false)}
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed bottom-0 left-0 right-0 z-[101] bg-[#111111] rounded-t-3xl p-6 md:hidden safe-area-bottom max-h-[80vh] overflow-hidden flex flex-col"
+            >
+              <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-4" />
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-white font-bold text-lg flex items-center gap-2">
+                  <TrendingUp size={20} className="text-cerulean-500" />
+                  Trending Now
+                </h2>
+                <button
+                  onClick={() => setShowTrending(false)}
+                  className="text-white/60 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="overflow-y-auto flex-1">
+                {trendingTopics.length > 0 ? (
+                  <div className="space-y-2">
+                    {trendingTopics.slice(0, 10).map((topic, index) => (
+                      <button
+                        key={topic.title}
+                        onClick={() => {
+                          setShowTrending(false);
+                        }}
+                        className="w-full flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors text-left"
+                      >
+                        <span className="text-cerulean-500 font-bold text-sm w-6">{index + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-medium truncate">{topic.title}</p>
+                          <p className="text-white/40 text-xs">{topic.views} views</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-white/40 py-8">
+                    <TrendingUp size={32} className="mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No trending topics available</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function SidebarItem({ label, active = false, onClick }: { label: string, active?: boolean, onClick?: () => void }) {
+function SidebarItem({ label, active = false, onClick, icon }: { label: string, active?: boolean, onClick?: () => void, icon?: React.ReactNode }) {
     return (
         <div
             onClick={onClick}
             className={`px-4 py-3 rounded-xl flex items-center gap-4 cursor-pointer transition-colors ${active ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}
         >
+            {icon}
             <span className="font-bold">{label}</span>
         </div>
     )

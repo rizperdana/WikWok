@@ -1,5 +1,24 @@
 import { WikiArticle } from '@/types';
 
+// In-memory cache for Wikipedia API responses
+const articleCache = new Map<string, { data: WikiArticle; timestamp: number }>();
+const CACHE_DURATION = 1000 * 60 * 30; // 30 minutes
+
+function getCachedArticle(key: string): WikiArticle | null {
+  const cached = articleCache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+  if (cached) {
+    articleCache.delete(key); // Remove expired entry
+  }
+  return null;
+}
+
+function setCachedArticle(key: string, article: WikiArticle): void {
+  articleCache.set(key, { data: article, timestamp: Date.now() });
+}
+
 interface FetchOptions {
   retries?: number;
   retryDelay?: number;
@@ -7,13 +26,13 @@ interface FetchOptions {
 }
 
 async function fetchWithRetry(
-  url: string, 
+  url: string,
   options: RequestInit & FetchOptions = {}
 ): Promise<Response> {
   const {
-    retries = 3,
-    retryDelay = 1000,
-    timeout = 5000,
+    retries = 1, // Reduce retries to avoid long delays
+    retryDelay = 300, // Faster retry
+    timeout = 5000, // Faster timeout
     ...fetchOptions
   } = options;
 
@@ -57,13 +76,16 @@ export async function fetchRandomArticle(lang: string): Promise<WikiArticle | nu
     return null;
   }
 
+  // Check cache first (not for random articles since they should be fresh)
+  // For random articles, we'll cache successful fetches to avoid duplicates
+
   try {
     const res = await fetchWithRetry(
       `https://${lang}.wikipedia.org/api/rest_v1/page/random/summary`,
       {
-        retries: 2,
-        retryDelay: 500,
-        timeout: 3000,
+        retries: 1,
+        retryDelay: 300,
+        timeout: 2500, // Faster timeout per request
         cache: 'no-store',
         headers: {
           'User-Agent': 'Wikwok/1.0 (mailto:admin@wik-wok.vercel.app)',
@@ -111,9 +133,9 @@ export async function fetchRandomArticle(lang: string): Promise<WikiArticle | nu
       console.debug('Request timeout for language:', lang);
     } else if (errorObj.name === 'TypeError') {
       // Network errors (CORS, DNS, connection refused, etc.)
-      console.error('Network error fetching wiki article:', errorObj.message);
+      // Silent fail to avoid console spam
     } else {
-      console.error('Unexpected error fetching wiki article:', errorObj);
+      // Silent unexpected errors
     }
     return null;
   }
@@ -135,10 +157,9 @@ export async function getFeedArticles(lang: string = 'en', count: number = 12): 
   const validArticles: WikiArticle[] = [];
   const seenTitles = new Set<string>();
   
-  // Aggressively fetch in larger concurrent batches to find quality articles faster
-  // Since random articles often lack images/content, we over-fetch and filter.
-  const BATCH_SIZE = 20; 
-  const MAX_PARALLEL_BATCHES = 3;
+  // Fetch in batches - reduced for faster response
+  const BATCH_SIZE = 5;
+  const MAX_PARALLEL_BATCHES = 2;
 
   for (let i = 0; i < MAX_PARALLEL_BATCHES && validArticles.length < TARGET_COUNT; i++) {
     try {
@@ -163,7 +184,7 @@ export async function getFeedArticles(lang: string = 'en', count: number = 12): 
       }
       
       // Early exit if we have enough to show something
-      if (validArticles.length >= (count > 8 ? 8 : 4)) break;
+      if (validArticles.length >= (count > 8 ? 6 : 3)) break;
       
     } catch (error) {
       console.error('Batch fetch failed:', error);

@@ -1,12 +1,41 @@
 import { WikiArticle } from '@/types';
 
+// Enhanced caching system
+const searchCache = new Map<string, { data: WikiArticle[]; timestamp: number }>();
+const trendingCache = new Map<string, { data: TrendingTopic[]; timestamp: number }>();
+const CACHE_DURATION = 1000 * 60 * 15; // 15 minutes for search results
+const TRENDING_CACHE_DURATION = 1000 * 60 * 5; // 5 minutes for trending
+
+function getCachedData<T>(cache: Map<string, { data: T; timestamp: number }>, key: string, duration: number): T | null {
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.timestamp < duration) {
+    return cached.data;
+  }
+  if (cached) {
+    cache.delete(key);
+  }
+  return null;
+}
+
+function setCachedData<T>(cache: Map<string, { data: T; timestamp: number }>, key: string, data: T): void {
+  cache.set(key, { data, timestamp: Date.now() });
+}
+
 // Use backend proxy to avoid CORS issues and CORS/rate-limiting from client IP,
 // and to enable caching.
 export async function searchWikipedia(query: string, lang: string = 'en'): Promise<WikiArticle[]> {
+  const cacheKey = `${lang}:${query.toLowerCase()}`;
+
+  // Check cache first
+  const cached = getCachedData(searchCache, cacheKey, CACHE_DURATION);
+  if (cached) return cached;
+
   try {
       const res = await fetch(`/api/wiki/search?mode=search&query=${encodeURIComponent(query)}&lang=${lang}`);
       if (!res.ok) return [];
-      return await res.json();
+      const data = await res.json();
+      setCachedData(searchCache, cacheKey, data);
+      return data;
   } catch (error) {
     console.error('Wikipedia search error:', error);
     return [];
@@ -52,12 +81,20 @@ export interface TrendingTopic {
 }
 
 export async function getTrendingTopics(lang: string = 'en'): Promise<TrendingTopic[]> {
-    try {
-        const res = await fetch(`/api/wiki/search?mode=trending&lang=${lang}`);
-        if (!res.ok) return [];
-        return await res.json();
-    } catch (error) {
-        console.error('Trending topics fetch error:', error);
-        return [];
-    }
+  const cacheKey = `trending:${lang}`;
+
+  // Check cache first
+  const cached = getCachedData(trendingCache, cacheKey, TRENDING_CACHE_DURATION);
+  if (cached) return cached;
+
+  try {
+      const res = await fetch(`/api/wiki/search?mode=trending&lang=${lang}`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      setCachedData(trendingCache, cacheKey, data);
+      return data;
+  } catch (error) {
+      console.error('Trending topics fetch error:', error);
+      return [];
+  }
 }

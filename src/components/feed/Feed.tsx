@@ -54,6 +54,7 @@ export function Feed({ initialArticles = [] }: FeedProps) {
   const [isRegionOpen, setIsRegionOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<FeedItem[] | null>(null);
+  const hasSearchResults = Array.isArray(searchResults) && searchResults.length > 0;
   const [regionSearch, setRegionSearch] = useState('');
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([]);
   const [readingArticle, setReadingArticle] = useState<WikiArticle | null>(null);
@@ -118,11 +119,11 @@ export function Feed({ initialArticles = [] }: FeedProps) {
   // Prefetch observer - load more when near bottom
   useEffect(() => {
     // Don't fetch if we have search results or are already fetching or no more pages
-    if (searchResults || isFetching || hasNextPage === false) return;
+    if (hasSearchResults || isFetching || hasNextPage === false) return;
     
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !searchResults && hasNextPage && !isFetching) {
+        if (entries[0].isIntersecting && !hasSearchResults && hasNextPage && !isFetching) {
           console.log('Loading more pages...');
           fetchNextPage();
         }
@@ -135,9 +136,9 @@ export function Feed({ initialArticles = [] }: FeedProps) {
     }
 
     return () => observer.disconnect();
-  }, [hasNextPage, fetchNextPage, searchResults, isFetching]);
+  }, [hasNextPage, fetchNextPage, hasSearchResults, isFetching]);
 
-  if (feedItems.length === 0 && (isFetching || isDetectingLanguage) && !searchResults) {
+  if (feedItems.length === 0 && (isFetching || isDetectingLanguage) && !hasSearchResults) {
       return (
           <div className="h-screen w-full flex flex-col items-center justify-center bg-[#060606] text-white gap-6">
               <div className="w-12 h-12 border-4 border-cerulean-500/20 border-t-cerulean-500 rounded-full animate-spin-custom shadow-[0_0_20px_rgba(69,123,157,0.2)]"></div>
@@ -160,7 +161,7 @@ export function Feed({ initialArticles = [] }: FeedProps) {
   }
 
   const currentLang = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
-  const displayItems = searchResults || feedItems;
+  const displayItems = hasSearchResults ? searchResults : feedItems;
 
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[#060606] flex justify-center">
@@ -179,7 +180,7 @@ export function Feed({ initialArticles = [] }: FeedProps) {
                 className="absolute top-4 left-4 lg:top-6 lg:left-6"
             >
                 <div className="relative">
-                    {searchResults ? (
+                    {hasSearchResults ? (
                         <button
                             onClick={() => {
                                 if (searchViewMode === 'feed') {
@@ -195,7 +196,7 @@ export function Feed({ initialArticles = [] }: FeedProps) {
                         </button>
                     ) : (
                         <button
-                            onClick={() => setIsRegionOpen(!isRegionOpen)}
+                            onClick={(e) => { e.stopPropagation(); setIsRegionOpen(prev => !prev); }}
                             className="flex items-center gap-2 lg:gap-3 px-4 py-2 lg:px-6 lg:py-4 bg-black/60 backdrop-blur-2xl border border-white/20 rounded-full text-white text-xs lg:text-sm font-black uppercase tracking-[0.2em] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] hover:bg-white/20 transition-all active:scale-95 group focus:outline-none pointer-events-auto"
                         >
                             <span className="text-lg lg:text-2xl leading-none drop-shadow-sm">{currentLang.flag}</span>
@@ -208,7 +209,7 @@ export function Feed({ initialArticles = [] }: FeedProps) {
                     )}
 
                     <AnimatePresence>
-                        {isRegionOpen && !searchResults && (
+                        {isRegionOpen && (
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
@@ -253,6 +254,8 @@ export function Feed({ initialArticles = [] }: FeedProps) {
                                                 key={l.code}
                                                 onClick={() => {
                                                     setLang(l.code);
+                                                    setSearchResults(null);
+                                                    setSearchViewMode('grid');
                                                     setIsRegionOpen(false);
                                                     setRegionSearch('');
                                                 }}
@@ -296,7 +299,7 @@ export function Feed({ initialArticles = [] }: FeedProps) {
                 data: r,
                 id: crypto.randomUUID()
             }));
-            setSearchResults(items);
+            setSearchResults(items.length ? items : null);
             setSearchViewMode('grid');
         }}
       />
@@ -362,7 +365,7 @@ export function Feed({ initialArticles = [] }: FeedProps) {
 
       {/* Main Feed: 9:16 constraint on desktop */}
       {/* Main Feed or Grid View */}
-      {searchResults && searchViewMode === 'grid' ? (
+      {hasSearchResults && searchViewMode === 'grid' ? (
         <main className="relative h-[100dvh] w-full lg:w-[450px] xl:w-[500px] bg-[#060606] lg:bg-transparent z-20 shadow-2xl overflow-hidden">
             <SearchResultsGrid
                 results={searchResults.filter(item => item.type === 'article').map(item => (item as Extract<FeedItem, { type: 'article' }>).data)}
